@@ -33,4 +33,5 @@ class ApiConstants {
   static const String symptomImageBaseUrl = "https://www.online-tech.in/SymptomsImage/";
   static const String testImageBaseUrl = "https://www.online-tech.in/TestMasterImage/";
   static const String familyMembersImageUrl = "https://www.online-tech.in/uploads/";
+  static const String orderDocumentImageUrl = "https://online-tech.in/OrderUploadReport/";
 }

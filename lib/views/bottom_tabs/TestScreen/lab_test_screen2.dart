@@ -17,6 +17,7 @@ import '../../../view_model/LabVM/AllSymptoms/symptom_bloc.dart';
 import '../../../view_model/LabVM/AllSymptoms/symptom_event.dart';
 import '../../../view_model/LabVM/AllSymptoms/symptom_state.dart';
 import '../../Dashboard/widgets/slide_page_route.dart';
+import '../HomeScreen/widgets/popular_test_packages.dart';
 import 'lab_test_list_page.dart';
 import 'lab_test_static_data.dart';
 import 'widgets/lab_test_app_bar.dart';
@@ -345,35 +346,28 @@ class _LabTestPageState extends State<LabTestPage> {
 
                   const SizedBox(height: 30),
 
-                  SizedBox(
-                    height: 200,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: planBanners.length,
-                      itemBuilder: (context, index) {
-                        return SizedBox(
-                          width:
-                          MediaQuery.of(context).size.width *
-                              0.8, // almost full width
-                          child: LabTestWidgets.buildPlanBanner(planBanners[index]),
-                        );
-                      },
-                    ),
-                  ),
+                  // SizedBox(
+                  //   height: 200,
+                  //   child: ListView.builder(
+                  //     scrollDirection: Axis.horizontal,
+                  //     padding: const EdgeInsets.symmetric(horizontal: 20),
+                  //     itemCount: planBanners.length,
+                  //     itemBuilder: (context, index) {
+                  //       return SizedBox(
+                  //         width:
+                  //         MediaQuery.of(context).size.width *
+                  //             0.8, // almost full width
+                  //         child: LabTestWidgets.buildPlanBanner(planBanners[index]),
+                  //       );
+                  //     },
+                  //   ),
+                  // ),
+                  //
+                  // const SizedBox(height: 30),
 
-                  const SizedBox(height: 30),
-
-                  SizedBox(
-                    height: 280,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: tests.length,
-                      itemBuilder: (context, index) {
-                        return LabTestWidgets.buildPopularTestCard(tests[index]);
-                      },
-                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: PopularTestPackages(),
                   ),
 
                   const SizedBox(height: 30),

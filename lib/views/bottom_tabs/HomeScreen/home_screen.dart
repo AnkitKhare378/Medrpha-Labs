@@ -207,7 +207,6 @@ class _HomeScreenState extends State<HomeScreen> {
               return const SizedBox.shrink();
             },
           ),
-
           const SizedBox(height: 20),
           CategoryScroller(),
           const SizedBox(height: 20),

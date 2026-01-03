@@ -1,13 +1,17 @@
 // lib/main.dart
 
 import 'dart:io';
+import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:medrpha_labs/data/repositories/all_banner_service/get_all_banner_service.dart';
 import 'package:medrpha_labs/data/repositories/blood_service/get_blood_service.dart';
 import 'package:medrpha_labs/data/repositories/faq_service/get_frequently_service.dart';
+import 'package:medrpha_labs/data/repositories/medicine_service/category_medicine_service.dart';
 import 'package:medrpha_labs/data/repositories/medicine_service/medicine_by_Id_service.dart';
+import 'package:medrpha_labs/data/repositories/order_service/order_document_service.dart';
+import 'package:medrpha_labs/data/repositories/order_service/order_status_service.dart';
 import 'package:medrpha_labs/data/repositories/rating_service/rating_delete_service.dart';
 import 'package:medrpha_labs/data/repositories/synonym_service/test_synonyms_service.dart';
 import 'package:medrpha_labs/data/repositories/test_service/all_test_search.dart';
@@ -18,9 +22,13 @@ import 'package:medrpha_labs/view_model/BloodVM/get_blood_view_model.dart';
 import 'package:medrpha_labs/view_model/FamilyMemberVM/get_family_members_view_model.dart';
 import 'package:medrpha_labs/view_model/FamilyMemberVM/relation_cubit.dart';
 import 'package:medrpha_labs/view_model/FaqVM/get_frequently_view_model.dart';
+import 'package:medrpha_labs/view_model/MedicineVM/category_medicine_bloc.dart';
 import 'package:medrpha_labs/view_model/MedicineVM/get_medicine_by_company_view_model.dart';
+import 'package:medrpha_labs/view_model/MedicineVM/get_medicine_by_store_bloc.dart';
 import 'package:medrpha_labs/view_model/MedicineVM/medicine_detail_view_model.dart';
+import 'package:medrpha_labs/view_model/OrderVM/OrderHistory/order_document_view_model.dart';
 import 'package:medrpha_labs/view_model/OrderVM/OrderHistory/order_history_bloc.dart';
+import 'package:medrpha_labs/view_model/OrderVM/OrderHistory/order_status_view_model.dart';
 import 'package:medrpha_labs/view_model/PaymentVM/payment_cubit.dart';
 import 'package:medrpha_labs/view_model/RatingVM/insert_rating_view_model.dart';
 import 'package:medrpha_labs/view_model/SynonymsVM/test_synonym_view_model.dart';
@@ -38,6 +46,7 @@ import 'data/repositories/family_member_service/relation_service.dart';
 import 'package:medrpha_labs/view_model/FamilyMemberVM/UpdateFamilyMember/family_member_update_cubit.dart';
 import 'data/repositories/lab_service/lab_service.dart'; // Import LabService
 import 'data/repositories/lab_service/symptom_service.dart';
+import 'data/repositories/medicine_service/get_medicine_by_store_service.dart';
 import 'data/repositories/order_service/order__history_service.dart';
 import 'data/repositories/order_service/order_service.dart';
 import 'data/repositories/package_service/package_service.dart';
@@ -94,6 +103,7 @@ import 'view_model/TestVM/TestSearch/lab_test_search_cubit.dart';
 import 'view_model/WalletVM/updateWallet/update_wallet_bloc.dart';
 import 'view_model/WalletVM/wallet_bloc.dart';
 import 'view_model/WishlistVM/get_wishlist_bloc.dart';
+import 'view_model/provider/family_provider.dart';
 import 'view_model/provider/save_for_later_provider.dart';
 import 'views/bottom_tabs/CartScreen/store/cart_notifier.dart';
 import 'data/repositories/category_repository.dart';
@@ -251,6 +261,18 @@ Future<void> main() async {
         RepositoryProvider<MedicineService>(
           create: (_) => MedicineService(),
         ),
+        RepositoryProvider<GetMedicineByStoreService>(
+          create: (_) => GetMedicineByStoreService(),
+        ),
+        RepositoryProvider<OrderDocumentService>(
+          create: (_) => OrderDocumentService(),
+        ),
+        RepositoryProvider<OrderStatusService>(
+          create: (_) => OrderStatusService(),
+        ),
+        RepositoryProvider<CategoryMedicineService>(
+          create: (_) => CategoryMedicineService(),
+        ),
       ],
       child: MultiProvider(
         providers: [
@@ -285,7 +307,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => OtpBloc()),
         BlocProvider(create: (_) => DashboardBloc()..add(DashboardShowLabsDialog())),
         BlocProvider(create: (context) => CategoryBloc(context.read<CategoryRepository>())),
-
+        ChangeNotifierProvider(create: (_) => FamilyProvider()),
         BlocProvider<AllTestCubit>(
           create: (context) => AllTestCubit(
             context.read<TestService>(),
@@ -496,6 +518,31 @@ class MyApp extends StatelessWidget {
             context.read<MedicineService>(),
           ),
         ),
+
+        BlocProvider<GetMedicineByStoreBloc>(
+          create: (context) => GetMedicineByStoreBloc(
+            context.read<GetMedicineByStoreService>(),
+          ),
+        ),
+
+        BlocProvider<OrderDocumentBloc>(
+          create: (context) => OrderDocumentBloc(
+            context.read<OrderDocumentService>(),
+          ),
+        ),
+
+        BlocProvider<OrderStatusBloc>(
+          create: (context) => OrderStatusBloc(
+            context.read<OrderStatusService>(),
+          ),
+        ),
+
+        BlocProvider<CategoryMedicineBloc>(
+          create: (context) => CategoryMedicineBloc(
+            context.read<CategoryMedicineService>(),
+          ),
+        ),
+
 
       ],
       child: MaterialApp(

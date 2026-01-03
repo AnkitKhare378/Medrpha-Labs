@@ -1,67 +1,83 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+// Ensure these paths match your actual project structure
 import 'package:medrpha_labs/views/bottom_tabs/HomeScreen/pages/widgets/medicine_grid_shimmer.dart';
-import '../../../../view_model/MedicineVM/get_medicine_by_company_view_model.dart';
+import '../../../../view_model/MedicineVM/get_medicine_by_store_bloc.dart';
 import '../../../Dashboard/widgets/slide_page_route.dart';
 import 'medicine_detail_screen.dart';
 import 'widgets/medicine_product_card.dart';
 
+
 class CompanyMedicineView extends StatelessWidget {
-  final int companyId;
+  final int storeId;
   final String companyName;
 
   const CompanyMedicineView({
     super.key,
-    required this.companyId,
+    required this.storeId,
     required this.companyName,
   });
 
   @override
   Widget build(BuildContext context) {
+    // 1. Fetch data on widget build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context
-          .read<GetMedicineByCompanyBloc>()
-          .add(FetchMedicineByCompany(companyId));
+          .read<GetMedicineByStoreBloc>()
+          .add(FetchMedicineByStore(storeId));
     });
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          "Medicine",
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          companyName.isNotEmpty ? companyName : "Medicine Store",
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 18),
         ),
         backgroundColor: Colors.blueAccent,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: BlocBuilder<GetMedicineByCompanyBloc, GetMedicineByCompanyState>(
+      // 2. Point BlocBuilder to GetMedicineByStoreBloc
+      body: BlocBuilder<GetMedicineByStoreBloc, GetMedicineByStoreState>(
         builder: (context, state) {
+
           // --- Loading State ---
-          if (state is GetMedicineByCompanyLoading) {
-            return const Center(child: MedicineCardShimmer());
+          if (state is GetMedicineByStoreLoading) {
+            return MedicineCardShimmer();
           }
 
           // --- Error State ---
-          if (state is GetMedicineByCompanyError) {
+          if (state is GetMedicineByStoreError) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline,
-                        color: Colors.red, size: 50),
-                    const SizedBox(height: 10),
-                    Text('Failed to load products: ${state.message}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.red)),
-                    const SizedBox(height: 20),
+                    const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Failed to load products',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      state.message,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
                     ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      ),
                       onPressed: () => context
-                          .read<GetMedicineByCompanyBloc>()
-                          .add(FetchMedicineByCompany(companyId)),
-                      child: const Text('Try Again'),
+                          .read<GetMedicineByStoreBloc>()
+                          .add(FetchMedicineByStore(storeId)),
+                      child: const Text('Try Again', style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
@@ -70,34 +86,43 @@ class CompanyMedicineView extends StatelessWidget {
           }
 
           // --- Loaded State ---
-          if (state is GetMedicineByCompanyLoaded) {
+          if (state is GetMedicineByStoreLoaded) {
             if (state.medicines.isEmpty) {
-              return const Center(
-                child: Text('No medicines found for this company.',
-                    style: TextStyle(fontSize: 16)),
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.inventory_2_outlined, size: 60, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No medicines found in this store.',
+                      style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey),
+                    ),
+                  ],
+                ),
               );
             }
 
-            // Display the list of products in a GridView
             return GridView.builder(
               padding: const EdgeInsets.all(12.0),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2, // 2 cards per row
-                childAspectRatio: 0.6, // Adjust height of the card
+                childAspectRatio: 0.68, // Adjusted for typical product cards
                 crossAxisSpacing: 12.0,
                 mainAxisSpacing: 12.0,
               ),
               itemCount: state.medicines.length,
               itemBuilder: (context, index) {
-                final productModel = state.medicines[index];
+                final medicineModel = state.medicines[index];
+
                 return MedicineProductCard(
-                  medicine: productModel,
+                  medicine: medicineModel,
                   onTap: () {
                     Navigator.of(context).push(
                       SlidePageRoute(
                         page: MedicineDetailScreen(
-                          medicineId: productModel.id ?? 0, // Pass the ID here
-                          productName: productModel.medicine ?? "", // Pass the name for the title
+                          medicineId: medicineModel.id ?? 0,
+                          productName: medicineModel.product ?? "Medicine Details",
                         ),
                       ),
                     );
@@ -107,14 +132,12 @@ class CompanyMedicineView extends StatelessWidget {
             );
           }
 
-          // --- Initial/Unexpected State ---
+          // --- Initial State ---
           return const Center(
-              child: Text('Please wait while data is being prepared.'));
+            child: CircularProgressIndicator(color: Colors.blueAccent),
+          );
         },
       ),
     );
   }
 }
-
-
-

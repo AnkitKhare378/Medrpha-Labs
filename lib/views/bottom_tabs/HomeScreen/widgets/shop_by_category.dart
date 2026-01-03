@@ -122,6 +122,7 @@ class _ShopByCategoryState extends State<ShopByCategory> {
               final item = categories[index];
               return buildCategoryItem(
                 CategoryItem(
+                  item.id,
                   item.name,
                   item.image,
                   Colors.blue.shade100,

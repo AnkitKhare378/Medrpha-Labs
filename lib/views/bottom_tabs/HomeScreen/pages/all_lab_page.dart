@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../../models/LabM/lab_model.dart';
 import '../../../../view_model/LabVM/AllLab/lab_bloc.dart';
 import '../../../../view_model/LabVM/AllLab/lab_event.dart';
@@ -21,15 +23,73 @@ class _AllLabsPageState extends State<AllLabsPage> {
   static const String _imageBaseUrl = 'https://www.online-tech.in/LabImage/';
   List<LabModel> selectedLabs = [];
 
+  // Variables to hold user's saved location
+  double? userLat;
+  double? userLng;
+
   @override
   void initState() {
     super.initState();
+    _loadUserLocation();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<LabBloc>().add(FetchLabsEvent());
     });
   }
 
-  // Toggle function now accepts LabModel
+  /// Fetches the latitude and longitude saved from the Location Picker
+  Future<void> _loadUserLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userLat = prefs.getDouble('selected_lat');
+      userLng = prefs.getDouble('selected_lng');
+    });
+  }
+
+  /// Filters labs within 50KM and sorts them by distance (Nearest First)
+  List<LabModel> _processLabs(List<LabModel> allLabs) {
+    // If user location is missing, we show all labs but can't sort by distance
+    if (userLat == null || userLng == null) {
+      return allLabs.where((lab) => lab.isLab == true).toList();
+    }
+
+    // 1. Filter: isLab must be true AND distance must be <= 50KM
+    List<LabModel> nearbyLabs = allLabs.where((lab) {
+      if (lab.isLab != true) return false;
+      if (lab.latitude == null || lab.longnitude == null) return false;
+
+      try {
+        final double lLat = double.parse(lab.latitude!);
+        final double lLng = double.parse(lab.longnitude!);
+
+        double distanceInMeters = Geolocator.distanceBetween(
+          userLat!,
+          userLng!,
+          lLat,
+          lLng,
+        );
+
+        return distanceInMeters <= 50000; // 50 KM Limit
+      } catch (e) {
+        return false;
+      }
+    }).toList();
+
+    // 2. Sort: Nearest First
+    nearbyLabs.sort((a, b) {
+      double distA = Geolocator.distanceBetween(
+        userLat!, userLng!,
+        double.parse(a.latitude!), double.parse(a.longnitude!),
+      );
+      double distB = Geolocator.distanceBetween(
+        userLat!, userLng!,
+        double.parse(b.latitude!), double.parse(b.longnitude!),
+      );
+      return distA.compareTo(distB);
+    });
+
+    return nearbyLabs;
+  }
+
   void toggleCompare(LabModel lab) {
     setState(() {
       if (selectedLabs.contains(lab)) {
@@ -67,6 +127,7 @@ class _AllLabsPageState extends State<AllLabsPage> {
               child: LabShimmerLoading(),
             );
           }
+
           if (state is LabError) {
             return Center(
               child: Padding(
@@ -89,12 +150,20 @@ class _AllLabsPageState extends State<AllLabsPage> {
               ),
             );
           }
-          if (state is LabLoaded) {
-            final filteredLabs = state.labs.where((lab) => lab.isLab == true).toList();
 
-            if (filteredLabs.isEmpty) {
+          if (state is LabLoaded) {
+            final filteredAndSortedLabs = _processLabs(state.labs);
+
+            if (filteredAndSortedLabs.isEmpty) {
               return Center(
-                child: Text('No labs found for your criteria.', style: GoogleFonts.poppins()),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Text(
+                    'No labs found within 50 KM of your location.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(fontSize: 16),
+                  ),
+                ),
               );
             }
 
@@ -102,23 +171,32 @@ class _AllLabsPageState extends State<AllLabsPage> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // 🔹 Labs List
                   ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filteredLabs.length,
+                    itemCount: filteredAndSortedLabs.length,
                     itemBuilder: (context, index) {
-                      final lab = filteredLabs[index];
+                      final lab = filteredAndSortedLabs[index];
                       final isSelected = selectedLabs.contains(lab);
 
-                      // Construct the full image URL
                       final imageUrl = lab.labImage != null && lab.labImage!.isNotEmpty
                           ? '$_imageBaseUrl${lab.labImage}'
                           : null;
 
+                      // Pre-calculate distance for the UI
+                      double distanceKm = 0.0;
+                      if (userLat != null && lab.latitude != null) {
+                        distanceKm = Geolocator.distanceBetween(
+                            userLat!, userLng!,
+                            double.parse(lab.latitude!), double.parse(lab.longnitude!)
+                        ) / 1000;
+                      }
+
                       return InkWell(
                         onTap: () {
-                            Navigator.of(context).push(SlidePageRoute(page: LabTestListPage(labId: lab.id, labName: lab.labName,)),);
+                          Navigator.of(context).push(SlidePageRoute(
+                            page: LabTestListPage(labId: lab.id, labName: lab.labName),
+                          ));
                         },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -133,7 +211,6 @@ class _AllLabsPageState extends State<AllLabsPage> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // 🖼️ Image Container Updated
                               Container(
                                 width: 110,
                                 height: 110,
@@ -147,32 +224,41 @@ class _AllLabsPageState extends State<AllLabsPage> {
                                       ? Image.network(
                                     imageUrl,
                                     fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return const Center(
-                                          child: CircularProgressIndicator(strokeWidth: 2));
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Center(
-                                          child: Icon(Icons.business, size: 40, color: Colors.grey));
-                                    },
+                                    errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(Icons.business, size: 40, color: Colors.grey),
                                   )
-                                      : const Center(
-                                      child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey)),
+                                      : const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
                                 ),
                               ),
-                              // ------------------------------------
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(lab.labName, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
+                                    Text(lab.labName,
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 15, fontWeight: FontWeight.w600)),
+                                    const SizedBox(height: 4),
+                                    // Distance Badge
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.shade50,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        "${distanceKm.toStringAsFixed(1)} KM away",
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            color: Colors.blueAccent,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
                                     const SizedBox(height: 6),
                                     Text("Email: ${lab.email ?? 'N/A'}",
-                                        style: GoogleFonts.poppins(fontSize: 13)),
+                                        style: GoogleFonts.poppins(fontSize: 12)),
                                     Text("Phone: ${lab.phoneNo ?? 'N/A'}",
-                                        style: GoogleFonts.poppins(fontSize: 13)),
+                                        style: GoogleFonts.poppins(fontSize: 12)),
                                   ],
                                 ),
                               ),
@@ -193,10 +279,7 @@ class _AllLabsPageState extends State<AllLabsPage> {
               ),
             );
           }
-          return const SingleChildScrollView(
-            padding: EdgeInsets.all(16),
-            child: LabShimmerLoading(),
-          );
+          return const LabShimmerLoading();
         },
       ),
     );

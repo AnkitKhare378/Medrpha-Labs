@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:medrpha_labs/models/MedicineM/store_medicine_model.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../../config/color/colors.dart'; // For AppColors.primaryColor
@@ -16,7 +17,7 @@ import '../../../CartScreen/store/cart_notifier.dart'; // For CartProvider
 import '../medicine_detail_screen.dart'; // For navigation
 
 class MedicineProductCard extends StatefulWidget {
-  final GetMedicineByCompanyModel medicine;
+  final StoreMedicineModel medicine;
   final VoidCallback? onTap;
 
   const MedicineProductCard({
@@ -174,7 +175,6 @@ class _MedicineProductCardState extends State<MedicineProductCard> {
 
                   const SizedBox(height: 10),
 
-                  // Add / Quantity Controls
                   if(isProductLoading)
                     const SizedBox(
                       width: double.infinity,
@@ -209,14 +209,17 @@ class _MedicineProductCardState extends State<MedicineProductCard> {
                         width: double.infinity,
                         height: 28,
                         child: ElevatedButton.icon(
-                          onPressed: () => cart.add(
-                            userId: _userId,
-                            productId: productId,
-                            name: _uniqueKey, // ✅ Use unique key
-                            categoryId: _medicineCategoryId,
-                            originalPrice: originalPriceString,
-                            discountedPrice: discountedPriceString,
-                          ),
+                          onPressed: () => {
+                            cart.add(
+                              userId: _userId,
+                              productId: productId,
+                              name: _uniqueKey,
+                              categoryId: _medicineCategoryId,
+                              originalPrice: originalPriceString,
+                              discountedPrice: discountedPriceString,
+                            ),
+                            showAppSnackBar(context, "This medicine is prescribed"),
+                          },
                           icon: const Icon(Icons.add, size: 16),
                           label: const Text("Add"),
                           style: ElevatedButton.styleFrom(

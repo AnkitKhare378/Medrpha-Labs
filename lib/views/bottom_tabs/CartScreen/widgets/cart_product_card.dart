@@ -54,10 +54,9 @@ class _CartProductCardState extends State<CartProductCard> {
     final int userId = _currentUserId ?? 0;
 
     void handleAdd() {
-      if  (productId != 0) {
+      if (productId != 0) {
+        // Logic Swapped: Category 1 now uses the main 'add' method
         if (categoryId == 1) {
-          cart.add1(widget.product.name, originalPrice, discountedPrice, 1);
-        } else {
           cart.add(
             userId: userId,
             productId: productId,
@@ -66,63 +65,103 @@ class _CartProductCardState extends State<CartProductCard> {
             originalPrice: originalPrice,
             discountedPrice: discountedPrice,
           );
+        } else {
+          // Others use add1
+          cart.add1(
+            widget.product.name,
+            originalPrice,
+            discountedPrice,
+            categoryId,
+          );
         }
       }
     }
 
     void handleRemove() {
       if (productId != 0) {
+        // Logic Swapped: Category 1 now uses the main 'remove' method
         if (categoryId == 1) {
-          cart.remove1(widget.product.name);
-        } else {
-          // Category 2 or default: Use API-backed method (Full Remove)
           cart.remove(
             userId: userId,
             productId: productId,
-            name: widget.product.name, categoryId: 2,
+            name: widget.product.name,
+            categoryId: categoryId,
+          );
+        } else {
+          cart.remove(
+            userId: userId,
+            productId: productId,
+            name: widget.product.name,
+            categoryId: categoryId,
           );
         }
       }
     }
 
     Widget buildQuantityControls(int currentQty) {
+      // Check if this specific product is currently hitting the API
+      final bool isLoading = cart.isProductLoading(productId);
+
       if (categoryId == 1) {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.remove, size: 16),
+              // Disable button if loading
+              icon: Icon(Icons.remove, size: 16, color: isLoading ? Colors.grey : AppColors.primaryColor),
               padding: EdgeInsets.zero,
-              onPressed: handleRemove,
+              onPressed: isLoading ? null : handleRemove,
             ),
-            Text(
-              '$currentQty',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+            // Show loader in place of the number
+            SizedBox(
+              width: 20,
+              child: isLoading
+                  ? const Center(
+                child: SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+                  ),
+                ),
+              )
+                  : Text(
+                '$currentQty',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.add, size: 16),
+              // Disable button if loading
+              icon: Icon(Icons.add, size: 16, color: isLoading ? Colors.grey : AppColors.primaryColor),
               padding: EdgeInsets.zero,
-              onPressed: handleAdd,
+              onPressed: isLoading ? null : handleAdd,
             ),
           ],
         );
-      }
-      else {
+      } else {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextButton(
-              onPressed: handleRemove,
+              onPressed: isLoading ? null : handleRemove,
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 foregroundColor: AppColors.primaryColor,
               ),
-              child: Text(
+              child: isLoading
+                  ? const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+                  : Text(
                 'Remove',
                 style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
               ),

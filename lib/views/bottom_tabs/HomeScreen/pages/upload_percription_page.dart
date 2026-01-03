@@ -1,27 +1,90 @@
-// ------------------------------------------------------------------
-// 1.2 UploadPrescriptionPage
-// ------------------------------------------------------------------
-
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../../../config/color/colors.dart';
+import 'widgets/prescription_detail_row.dart';
 
-class UploadPrescriptionPage extends StatelessWidget {
+class UploadPrescriptionPage extends StatefulWidget {
   const UploadPrescriptionPage({super.key});
+
+  @override
+  State<UploadPrescriptionPage> createState() => _UploadPrescriptionPageState();
+}
+
+class _UploadPrescriptionPageState extends State<UploadPrescriptionPage> {
+  File? _selectedFile;
+  final ImagePicker _picker = ImagePicker();
+
+  // Logic for Camera and Gallery
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        imageQuality: 80, // Reduces size to stay under 5MB
+      );
+      if (pickedFile != null) {
+        setState(() {
+          _selectedFile = File(pickedFile.path);
+        });
+        _showSuccessSnackBar("Image selected successfully");
+      }
+    } catch (e) {
+      _showErrorSnackBar("Error picking image: $e");
+    }
+  }
+
+  // Logic for My Files (PDFs, etc.)
+  Future<void> _pickDocument() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
+
+      if (result != null) {
+        PlatformFile file = result.files.first;
+
+        // Check file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+          _showErrorSnackBar("File size exceeds 5MB limit");
+          return;
+        }
+
+        setState(() {
+          _selectedFile = File(file.path!);
+        });
+        _showSuccessSnackBar("Document selected: ${file.name}");
+      }
+    } catch (e) {
+      _showErrorSnackBar("Error picking file: $e");
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryColor, // Aqua/Teal color from screenshot
+        backgroundColor: AppColors.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         title: Text(
           'Upload prescription',
-          style: GoogleFonts.poppins(
-              color: Colors.white, fontWeight: FontWeight.w500),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
         ),
       ),
       body: SingleChildScrollView(
@@ -31,68 +94,36 @@ class UploadPrescriptionPage extends StatelessWidget {
           children: [
             Text(
               'What is a valid prescription?',
-              style: GoogleFonts.poppins(
-                  fontSize: 16, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
 
-            // Prescription Image Placeholder
-            Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // This is a simplified static representation of the image details
-                  const PrescriptionDetailRow(
-                      text: 'Dr Apurva Kumar', label: 'Doctor\'s details', number: 1),
-                  const PrescriptionDetailRow(
-                      text: '20-01-2025', label: 'Date of prescription', number: 2),
-                  const PrescriptionDetailRow(
-                      text: 'Megha Raj', label: 'Patient\'s details', number: 3),
-                  const PrescriptionDetailRow(
-                      text: 'Paracetamol - 50mg', label: 'Medicines', number: 4),
-                ],
-              ),
-            ),
+            // Prescription Preview or Instructions
+            _selectedFile != null
+                ? _buildFilePreview()
+                : _buildStaticInstructions(),
+
             const SizedBox(height: 25),
 
-            // Rules/Supported Files
-            Text(
-              '• Include details of doctor, patient & date of visit',
-              style: GoogleFonts.poppins(fontSize: 14),
-            ),
-            Text(
-              '• Supported files: **PNG, JPEG, PDF**',
-              style: GoogleFonts.poppins(fontSize: 14),
-            ),
-            Text(
-              '• File size limit: **5MB**',
-              style: GoogleFonts.poppins(fontSize: 14),
-            ),
+            Text('• Include details of doctor, patient & date of visit', style: GoogleFonts.poppins(fontSize: 14)),
+            Text('• Supported files: PNG, JPEG, PDF', style: GoogleFonts.poppins(fontSize: 14)),
+            Text('• File size limit: 5MB', style: GoogleFonts.poppins(fontSize: 14)),
+
             const SizedBox(height: 40),
 
-            // Upload section header
             Text(
               'Upload prescription using',
-              style: GoogleFonts.poppins(
-                  fontSize: 16, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
 
-            // Upload Options Row (Camera, Gallery, My Files)
-            const Row(
+            // Upload Options Row
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                UploadOptionButton(
-                    icon: Icons.camera_alt_outlined, label: 'Camera'),
-                UploadOptionButton(
-                    icon: Icons.image_outlined, label: 'Gallery'),
-                UploadOptionButton(
-                    icon: Icons.description_outlined, label: 'My Files'),
+                _buildOption(Icons.camera_alt_outlined, 'Camera', () => _pickImage(ImageSource.camera)),
+                _buildOption(Icons.image_outlined, 'Gallery', () => _pickImage(ImageSource.gallery)),
+                _buildOption(Icons.description_outlined, 'My Files', _pickDocument),
               ],
             ),
           ],
@@ -100,101 +131,63 @@ class UploadPrescriptionPage extends StatelessWidget {
       ),
     );
   }
-}
 
-// Helper widget for the prescription details
-class PrescriptionDetailRow extends StatelessWidget {
-  final String text;
-  final String label;
-  final int number;
-
-  const PrescriptionDetailRow({
-    super.key,
-    required this.text,
-    required this.label,
-    required this.number,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  // Helper to build the buttons
+  Widget _buildOption(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
         children: [
-          Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: Colors.black87,
-                  decoration: TextDecoration.underline,
-                  decorationStyle: TextDecorationStyle.dashed),
-            ),
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: Colors.grey.shade100,
+            child: Icon(icon, color: AppColors.primaryColor, size: 28),
           ),
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: const Color(0xFFe91e63), // Pink circle color
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                '$number',
-                style: GoogleFonts.poppins(color: Colors.white, fontSize: 12),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: GoogleFonts.poppins(fontSize: 14, color: Colors.black54),
-            ),
-          ),
+          const SizedBox(height: 8),
+          Text(label, style: GoogleFonts.poppins(fontSize: 12)),
         ],
       ),
     );
   }
-}
 
-// Helper widget for the upload buttons
-class UploadOptionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
+  Widget _buildStaticInstructions() {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Column(
+        children: [
+          PrescriptionDetailRow(text: 'Dr Apurva Kumar', label: 'Doctor\'s details', number: 1),
+          PrescriptionDetailRow(text: '20-01-2025', label: 'Date of prescription', number: 2),
+          PrescriptionDetailRow(text: 'Megha Raj', label: 'Patient\'s details', number: 3),
+          PrescriptionDetailRow(text: 'Paracetamol - 50mg', label: 'Medicines', number: 4),
+        ],
+      ),
+    );
+  }
 
-  const UploadOptionButton({
-    super.key,
-    required this.icon,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Icon(icon, size: 35, color: AppColors.primaryColor),
-        ),
-        const SizedBox(height: 8),
-        Text(label, style: GoogleFonts.poppins(fontSize: 12)),
-      ],
+  Widget _buildFilePreview() {
+    bool isPdf = _selectedFile!.path.toLowerCase().endsWith('.pdf');
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.primaryColor),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          isPdf
+              ? const Icon(Icons.picture_as_pdf, size: 100, color: Colors.red)
+              : Image.file(_selectedFile!, height: 200, fit: BoxFit.contain),
+          TextButton(
+            onPressed: () => setState(() => _selectedFile = null),
+            child: const Text("Remove File", style: TextStyle(color: Colors.red)),
+          )
+        ],
+      ),
     );
   }
 }

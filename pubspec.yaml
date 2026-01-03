@@ -47,6 +47,11 @@ dependencies:
   intl: ^0.20.2
   flutter_svg: ^2.2.1
   url_launcher: ^6.2.2
+  dio: ^5.4.0
+  gal: ^2.1.0
+  permission_handler: ^11.3.0
+  path_provider: ^2.1.2
+  file_picker: ^10.3.8
 
 dev_dependencies:
   flutter_test:

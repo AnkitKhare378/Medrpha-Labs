@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../Dashboard/widgets/slide_page_route.dart';
+import '../../CategoryScreen/category_page.dart';
 import '../pages/search_detail_page.dart';
 import '../pages/upload_percription_page.dart';
 
@@ -10,36 +11,40 @@ class PrescriptionCardsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We omit the Dot Indicator here for brevity, assuming it's handled elsewhere
     return SizedBox(
-      height: 195, // Explicit height for the horizontal ListView
+      height: 195,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
         children: [
-          // Card 1: No prescription? (Not the upload card)
-          const PrescriptionCard(
-            title: 'No prescription?\nNo problem!',
-            subtitle: 'Place order & get\nFree Doctor Consultation call in 5 mins!',
-            buttonText: 'Order now',
-            buttonColor: Color(0xFF2ecc71),
-            isUploadCard: false,
-          ),
-          // Card 2: Have a prescription? (This is the upload card)
+          // Card 1: Have a prescription?
           PrescriptionCard(
             title: 'Have a\nprescription?',
             subtitle: 'Simply upload and we will help place order on your behalf.',
             buttonText: 'Upload',
             buttonColor: Colors.blue.shade400,
-            isUploadCard: true, // Set to true to enable navigation
+            onTap: () {
+              Navigator.of(context).push(
+                SlidePageRoute(page: const UploadPrescriptionPage()),
+              );
+            },
           ),
-          // Card 3: Continue shopping
+
+          // Card 2: Continue shopping (The "Check" button)
           PrescriptionCard(
             title: 'Continue\nshopping for',
             subtitle: 'Medrpha Labs',
             buttonText: 'Check',
             buttonColor: Colors.orange.shade600,
-            isUploadCard: false,
+            onTap: () {
+              // Navigates to your Dashboard Category Page
+              Navigator.of(context).push(
+                SlidePageRoute(page: const CategoryPage()),
+              );
+
+              // Temporary feedback to confirm it works
+              debugPrint("Navigating to Category Page...");
+            },
           ),
         ],
       ),
@@ -47,22 +52,22 @@ class PrescriptionCardsSection extends StatelessWidget {
   }
 }
 
-/// Widget for the horizontal scrolling cards (Prescription/Order).
+/// A generic card widget that accepts an onTap function for navigation
 class PrescriptionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final String buttonText;
   final Color buttonColor;
-  final bool isUploadCard; // New flag to distinguish the upload card
+  final VoidCallback onTap;
 
   const PrescriptionCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.subtitle,
     required this.buttonText,
     required this.buttonColor,
-    this.isUploadCard = false, // Default is false
-  }) : super(key: key);
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -87,48 +92,49 @@ class PrescriptionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  height: 1.3,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             height: 38,
             child: ElevatedButton(
-              onPressed: () {
-                if (isUploadCard) {
-                  Navigator.of(context).push(
-                    SlidePageRoute(page: const UploadPrescriptionPage()),
-                  );
-                } else {
-                  // Handle other button taps (e.g., 'Order now')
-                }
-              },
+              onPressed: onTap, // Executes the specific logic passed from parent
               style: ElevatedButton.styleFrom(
                 backgroundColor: buttonColor,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 0),
+                padding: EdgeInsets.zero,
                 elevation: 0,
               ),
               child: Text(
                 buttonText,
-                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),

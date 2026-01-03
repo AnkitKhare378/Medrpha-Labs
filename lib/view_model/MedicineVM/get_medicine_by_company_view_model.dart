@@ -37,7 +37,7 @@ class GetMedicineByCompanyLoading extends GetMedicineByCompanyState {}
 
 /// State when data fetching is successful.
 class GetMedicineByCompanyLoaded extends GetMedicineByCompanyState {
-  final List<GetMedicineByCompanyModel> medicines;
+  final List<GetMedicineByCompanyModel1> medicines;
 
   const GetMedicineByCompanyLoaded(this.medicines);
 

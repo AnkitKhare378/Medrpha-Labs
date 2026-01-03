@@ -32,72 +32,76 @@ class _CategoryPageState extends State<CategoryPage> {
     });
   }
 
-  final List<String> categories = [
-    'Top Categories',
-    'Beauty',
-    'Wellness',
-    'Health Care',
-    'Nutrition',
-    'Fitness Equipment',
-  ];
 
   final List<CategoryItem> categoryItems = [
     CategoryItem(
+      1,
       'Medicines',
       'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135829698.png',
       Colors.pink.shade100,
     ),
     CategoryItem(
+      2,
       'Devices',
       'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135873220.png',
       Colors.purple.shade100,
     ),
     CategoryItem(
+      3,
       'Personal Care',
       'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712129336907.png',
       Colors.orange.shade100,
     ),
     CategoryItem(
+      4,
       'Surgicals',
       'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712129450727.png',
       Colors.blue.shade100,
     ),
     CategoryItem(
+      5,
       'Wellness',
       'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135480816.png',
       Colors.red.shade100,
     ),
     CategoryItem(
+      6,
       'Fitness',
       'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135324627.png',
       Colors.brown.shade100,
     ),
     CategoryItem(
+      7,
       'Petcare',
       'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712043199167.png',
       Colors.grey.shade100,
     ),
     CategoryItem(
+      8,
       'Eyewear',
       'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712129539687.png',
       Colors.green.shade100,
     ),
     CategoryItem(
+      9,
       'Women Care',
       'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712129579415.png',
       Colors.pink.shade100,
     ),
     CategoryItem(
+      10,
       'Treatments',
       'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712129613695.png',
       Colors.blue.shade100,
     ),
     CategoryItem(
+      11,
       'Ayush',
       'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135920391.png',
       Colors.orange.shade100,
     ),
     CategoryItem(
+      12,
       'Mom & Baby',
       'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1716811610519.png',
       Colors.purple.shade100,
@@ -125,54 +129,7 @@ class _CategoryPageState extends State<CategoryPage> {
     ),
   ];
 
-  // All Categories items
-  final List<AllCategoryItem> allCategoryItems = [
-    AllCategoryItem(
-      'Devices',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135873220.png',
-      Color(0xFFE1F5FE),
-    ),
-    AllCategoryItem(
-      'Surgicals',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712129450727.png',
-      Color(0xFFE8EAF6),
-    ),
-    AllCategoryItem(
-      'Medicines',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135829698.png',
-      Color(0xFFFCE4EC),
-    ),
-    AllCategoryItem(
-      'Petcare',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712043199167.png',
-      Color(0xFFF3E5F5),
-    ),
-    AllCategoryItem(
-      'Fitness',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135324627.png',
-      Color(0xFFFFF3E0),
-    ),
-    AllCategoryItem(
-      'Sexual Wellness',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135480816.png',
-      Color(0xFFFFEBEE),
-    ),
-    AllCategoryItem(
-      'Ayush',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135920391.png',
-      Color(0xFFE8F5E8),
-    ),
-    AllCategoryItem(
-      'Personal Care',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712129336907.png',
-      Color(0xFFFFF8E1),
-    ),
-    AllCategoryItem(
-      'Mom & Baby',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1716811610519.png',
-      Color(0xFFFCE4EC),
-    ),
-  ];
+
 
   @override
   Widget build(BuildContext context) {
@@ -280,16 +237,14 @@ class _CategoryPageState extends State<CategoryPage> {
                                 final imageUrl =
                                     "${categories[index].image.replaceAll("\\", "/")}";
 
-                                return SizedBox( // Item width
-                                  width: 80,
-                                  child: buildCategoryItem(
-                                    CategoryItem(
-                                      categories[index].name,
-                                      imageUrl,
-                                      Colors.blue.shade100,
-                                    ),
-                                    context,
+                                return buildCategoryItem(
+                                  CategoryItem(
+                                    categories[index].id,
+                                    categories[index].name,
+                                    imageUrl,
+                                    Colors.blue.shade100,
                                   ),
+                                  context,
                                 );
                               },
                             ),
@@ -425,6 +380,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
                               return buildCategoryItem( // Use the existing buildCategoryItem helper
                                 CategoryItem(
+                                  category.id,
                                   category.name,
                                   imageUrl,
                                   Colors.blue.shade100, // Replace with dynamic color if available

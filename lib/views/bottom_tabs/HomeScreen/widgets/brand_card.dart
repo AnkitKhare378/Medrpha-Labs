@@ -5,11 +5,13 @@ import 'dart:math';
 
 // Assuming these paths are correct
 import '../../../../config/color/colors.dart';
+import '../../../../data/repositories/medicine_service/category_medicine_service.dart';
 import '../../../../models/BrandM/brand_model.dart';
 // ⚠️ You must create the BrandStoryPage file at this path:
+import '../../../Dashboard/widgets/slide_page_route.dart';
 import '../pages/brand_story_page.dart';
+import '../pages/category_medicine_view.dart';
 
-// Assuming the image host URL is the base API URL
 const String _imageHostUrl = 'https://www.online-tech.in/';
 
 class BrandCard extends StatelessWidget {
@@ -17,16 +19,11 @@ class BrandCard extends StatelessWidget {
 
   const BrandCard({super.key, required this.brand});
 
-  // Logo URL for the circle/story card
   String get logoImageUrl => '$_imageHostUrl${brand.image.replaceAll('\\', '/')}';
 
-  // Assuming the story image is the same for this implementation,
-  // but you can change this if BrandModel had a separate 'storyImage' field.
   String get storyImageUrl => logoImageUrl;
 
-  // Simple function to generate a consistent placeholder color based on Brand ID
   Color _getPlaceholderColor(int id) {
-    // Generate a color from a fixed list or a hash
     final colors = [
       Colors.blue, Colors.pink, Colors.green, Colors.orange, Colors.purple,
       AppColors.primaryColor, Colors.red, Colors.amber,
@@ -41,13 +38,18 @@ class BrandCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         // 💡 Implement Navigation to BrandStoryPage
+        // Navigator.of(context).push(
+        //   MaterialPageRoute(
+        //     builder: (context) => BrandStoryPage(
+        //       brandName: brand.brandName,
+        //       // Pass the BrandModel to the story page if needed, but using required fields
+        //       imageUrl: storyImageUrl,
+        //     ),
+        //   ),
+        // );
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => BrandStoryPage(
-              brandName: brand.brandName,
-              // Pass the BrandModel to the story page if needed, but using required fields
-              imageUrl: storyImageUrl,
-            ),
+          SlidePageRoute(
+            page: CategoryMedicineView(id: brand.id, title: brand.brandName, fetchType: MedicineFetchType.brand,),
           ),
         );
       },

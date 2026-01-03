@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:medrpha_labs/views/bottom_tabs/CategoryScreen/devices/device_page.dart';
+import 'package:medrpha_labs/views/bottom_tabs/HomeScreen/pages/category_medicine_view.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../config/color/colors.dart';
+import '../../../data/repositories/medicine_service/category_medicine_service.dart';
 import '../../Dashboard/widgets/slide_page_route.dart';
 import 'medicines/medicin_screen.dart' hide AppColors;
 
 class CategoryItem {
+  final int id;
   final String name;
   final String imageUrl;
   final Color backgroundColor;
 
-  CategoryItem(this.name, this.imageUrl, this.backgroundColor);
+  CategoryItem(this.id,this.name, this.imageUrl, this.backgroundColor, );
 }
 
 Widget buildCategoryItem(CategoryItem item, BuildContext context) {
@@ -21,10 +24,9 @@ Widget buildCategoryItem(CategoryItem item, BuildContext context) {
     onTap: () {
       Navigator.of(context).push(
         SlidePageRoute(
-          page: DevicePage(categoryName: item.name),
+          page: CategoryMedicineView(id: item.id, title: item.name, fetchType: MedicineFetchType.category,),
         ),
       );
-
     },
     child: Column(
       children: [

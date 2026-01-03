@@ -158,7 +158,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
             _menuItem(Iconsax.wallet_3, 'My Wallet', () {Navigator.of(context).push(SlidePageRoute(page: const WalletPage()));}),
             _menuItem(Iconsax.shopping_bag, 'My Orders & Bookings', () {Navigator.of(context).push(SlidePageRoute(page: OrderHistoryScreen()));}),
             _menuItem(Iconsax.location, 'My Addresses', () {Navigator.of(context).push(SlidePageRoute(page: const SelectAddressPage()));}),
-            _menuItem(Iconsax.health, 'Health Records', () {Navigator.of(context).push(SlidePageRoute(page: const HealthRecordPage()));}),
+            // _menuItem(Iconsax.health, 'Health Records', () {Navigator.of(context).push(SlidePageRoute(page: const HealthRecordPage()));}),
             _menuItem(Iconsax.notification, 'Notification', () {Navigator.of(context).push(SlidePageRoute(page: const NotificationPage()));}),
             _menuItem(Iconsax.people, 'Family Members', () {Navigator.of(context).push(SlidePageRoute(page: const FamilyMembersPage()));}),
             _menuItem(Iconsax.save_2, 'Saved For Later', () {Navigator.of(context).push(SlidePageRoute(page: SaveForLaterPage()));}),

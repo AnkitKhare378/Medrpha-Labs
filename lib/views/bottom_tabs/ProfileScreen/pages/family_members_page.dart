@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:medrpha_labs/config/apiConstant/api_constant.dart';
-import 'package:medrpha_labs/config/color/colors.dart'; // Assuming AppColors for primary color
-
-// Note: Assuming necessary model and service imports are defined elsewhere
-// and the imported cubits/states cover FamilyMemberDeleteState/Success/Error.
-
+import 'package:provider/provider.dart';
 import '../../../../models/FamilyMemberM/get_family_members_model.dart';
 import '../../../../view_model/FamilyMemberVM/DeleteFamilyMember/family_member_delete_cubit.dart';
 import '../../../../view_model/FamilyMemberVM/UpdateFamilyMember/family_member_update_cubit.dart';
 import '../../../../view_model/FamilyMemberVM/get_family_members_view_model.dart'; // Contains GetFamilyMembersCubit/State
+import '../../../../view_model/provider/family_provider.dart';
 import '../../../Dashboard/widgets/slide_page_route.dart';
 import '../../HomeScreen/pages/widgets/add_more_test_button.dart';
 import '../widgets/family_member_shimmer.dart';
@@ -26,10 +23,10 @@ class FamilyMembersPage extends StatefulWidget {
 
 class _FamilyMembersPageState extends State<FamilyMembersPage> {
   static const Map<int, String> relationMap = {
-    1: "Father",
-    2: "Mother",
-    3: "Brother",
-    4: "Sister",
+    3: "Wify",
+    4: "Brother",
+    5: "Father",
+    6: "Sister",
   };
 
   @override
@@ -94,27 +91,32 @@ class _FamilyMembersPageState extends State<FamilyMembersPage> {
     required double completion,
     required VoidCallback onTap,
     required VoidCallback onDelete,
+    bool isSelected = false,
   }) {
-    // Note: Colors.blueAccent used in the provided code is replaced with a generic
-    // AppColors.primaryColor if it is available in your imported config.
     const Color cardPrimaryColor = Colors.blueAccent; // Keeping original color for consistency
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: cardPrimaryColor.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? cardPrimaryColor : Colors.transparent,
+            width: 2,
           ),
-        ],
-      ),
-      child: GestureDetector(
-        onTap: onTap,
+          boxShadow: [
+            BoxShadow(
+              color: isSelected
+                  ? cardPrimaryColor.withOpacity(0.2)
+                  : cardPrimaryColor.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Row(
           children: [
             CircleAvatar(
@@ -216,157 +218,156 @@ class _FamilyMembersPageState extends State<FamilyMembersPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
-      appBar: AppBar(
-        title: Text(
-          'Family Members',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF0F4F8),
+        appBar: AppBar(
+          title: Text(
+            'Family Members',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: Colors.blueAccent,
+          foregroundColor: Colors.white,
         ),
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
-      ),
-      body: BlocListener<FamilyMemberDeleteCubit, FamilyMemberDeleteState>(
-        listener: (context, state) {
-          if (state is FamilyMemberDeleteSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-            // After successful deletion, refresh the list
-            context.read<GetFamilyMembersCubit>().refreshMembers();
-          } else if (state is FamilyMemberDeleteError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text(state.message), backgroundColor: Colors.red),
-            );
-            // If there was an error, refresh to ensure the list state is correct
-            context.read<GetFamilyMembersCubit>().refreshMembers();
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            children: [
-              Expanded(
-                child: BlocBuilder<GetFamilyMembersCubit, GetFamilyMembersState>(
-                  builder: (context, state) {
-                    if (state is GetFamilyMembersLoaded) {
-                      if (state.members.isEmpty) {
-                        return const Center(
-                          child: Text('No family members found. Tap "Add new member" to begin.'),
+        body: BlocListener<FamilyMemberDeleteCubit, FamilyMemberDeleteState>(
+          listener: (context, state) {
+            if (state is FamilyMemberDeleteSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message)),
+              );
+              // After successful deletion, refresh the list
+              context.read<GetFamilyMembersCubit>().refreshMembers();
+            } else if (state is FamilyMemberDeleteError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text(state.message), backgroundColor: Colors.red),
+              );
+              // If there was an error, refresh to ensure the list state is correct
+              context.read<GetFamilyMembersCubit>().refreshMembers();
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              children: [
+                Expanded(
+                  child: BlocBuilder<GetFamilyMembersCubit, GetFamilyMembersState>(
+                    builder: (context, state) {
+                      if (state is GetFamilyMembersLoaded) {
+                        if (state.members.isEmpty) {
+                          return const Center(
+                            child: Text('No family members found. Tap "Add new member" to begin.'),
+                          );
+                        }
+
+                        // Build the list from the fetched data
+                        return ListView(
+                          padding: const EdgeInsets.only(top: 16),
+                          children: state.members.map((member) {
+                            final memberId = member.id;
+                            String initial = member.firstName.isNotEmpty
+                                ? member.firstName[0].toUpperCase()
+                                : '?';
+                            String age = _calculateAge(member.dateOfBirth);
+                            double completion = _getCompletion(member);
+                            String relationName = _getRelationName(member.relationId);
+
+                            // Use Consumer to listen for changes in the selected member
+                            return Consumer<FamilyProvider>(
+                              builder: (context, familyProvider, child) {
+                                // Check if this specific member is the one currently selected
+                                final bool isSelected = familyProvider.selectedMember?.id == memberId;
+
+                                return Dismissible(
+                                  key: ValueKey(memberId),
+                                  direction: DismissDirection.endToStart,
+                                  background: Container(
+                                    alignment: Alignment.centerRight,
+                                    padding: const EdgeInsets.only(right: 20.0),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.shade600,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    margin: const EdgeInsets.only(bottom: 16),
+                                    child: const Icon(Icons.delete, color: Colors.white),
+                                  ),
+                                  confirmDismiss: (direction) async {
+                                    return await _confirmDelete(context, member.firstName);
+                                  },
+                                  onDismissed: (direction) {
+                                    context.read<FamilyMemberDeleteCubit>().deleteMember(memberId);
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: _memberCard(
+                                      isSelected: isSelected, // Pass the selection state to the card
+                                      image: member.uploadPhoto ?? '',
+                                      initial: initial,
+                                      name: '${member.firstName} ${member.lastName}',
+                                      relation: relationName,
+                                      age: age,
+                                      completion: completion,
+                                      onTap: () async {
+                                        familyProvider.selectMember(member);
+                                        context.read<FamilyMemberUpdateCubit>().resetState();
+
+                                        await Navigator.of(context).push(
+                                          SlidePageRoute(
+                                            page: UpdateMemberPage(member: member),
+                                          ),
+                                        );
+
+                                        context.read<GetFamilyMembersCubit>().refreshMembers();
+                                      },
+                                      onDelete: () async {
+                                        if (await _confirmDelete(context, member.firstName)) {
+                                          context.read<FamilyMemberDeleteCubit>().deleteMember(memberId);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          }).toList(),
                         );
                       }
 
-                      // Build the list from the fetched data
-                      return ListView(
-                        padding: const EdgeInsets.only(top: 16),
-                        children: state.members.map((member) {
-                          // Use actual data from the FamilyMemberModel
-                          final memberId = member.id;
-                          String initial = member.firstName.isNotEmpty
-                              ? member.firstName[0].toUpperCase()
-                              : '?';
-                          String age = _calculateAge(member.dateOfBirth);
-                          double completion = _getCompletion(member); // Calculate completion
+                      // Handle loading and error states below
+                      if (state is GetFamilyMembersLoading ||
+                          state is GetFamilyMembersInitial) {
+                        return const FamilyMemberShimmer();
+                      }
 
-                          String relationName = _getRelationName(
-                            member.relationId,
-                          );
+                      if (state is GetFamilyMembersError) {
+                        return Center(
+                            child: Text(
+                                'Failed to load members: ${state.message}'));
+                      }
 
-                          // The Dismissible widget handles the swipe-to-delete gesture
-                          return Dismissible(
-                            key: ValueKey(memberId),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 20.0),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade600,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              margin: const EdgeInsets.only(bottom: 16),
-                              child: const Icon(Icons.delete, color: Colors.white),
-                            ),
-                            confirmDismiss: (direction) async {
-                              return await _confirmDelete(
-                                  context, member.firstName);
-                            },
-                            onDismissed: (direction) {
-                              // Execute delete action after confirmation
-                              context
-                                  .read<FamilyMemberDeleteCubit>()
-                                  .deleteMember(memberId);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: _memberCard(
-                                image: member.uploadPhoto ?? '',
-                                initial: initial,
-                                name: '${member.firstName} ${member.lastName}',
-                                relation: relationName,
-                                age: age,
-                                completion: completion,
-                                // onTap navigates to the update page
-                                onTap: () async {
-                                  // Clear any previous update errors/successes
-                                  context.read<FamilyMemberUpdateCubit>().resetState();
-                                  await Navigator.of(context).push(
-                                    SlidePageRoute(
-                                      page: UpdateMemberPage(member: member),
-                                    ),
-                                  );
-                                  // Refresh the list after returning from update page
-                                  context.read<GetFamilyMembersCubit>().refreshMembers();
-                                },
-                                // onDelete handles the trash icon tap
-                                onDelete: () async {
-                                  if (await _confirmDelete(
-                                      context, member.firstName)) {
-                                    context
-                                        .read<FamilyMemberDeleteCubit>()
-                                        .deleteMember(memberId);
-                                  }
-                                },
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    }
-
-                    // Handle loading and error states below
-                    if (state is GetFamilyMembersLoading ||
-                        state is GetFamilyMembersInitial) {
-                      return const FamilyMemberShimmer();
-                    }
-
-                    if (state is GetFamilyMembersError) {
-                      return Center(
-                          child: Text(
-                              'Failed to load members: ${state.message}'));
-                    }
-
-                    return const SizedBox.shrink();
-                  },
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 ),
-              ),
 
-              AddMoreTestButton(
-                onPressed: () async {
-                  // Navigate to add new member page
-                  await Navigator.of(
-                    context,
-                  ).push(SlidePageRoute(page: const AddNewMemberPage()));
-                  // Refresh the list when returning from add screen
-                  context.read<GetFamilyMembersCubit>().refreshMembers();
-                },
-                title: '+ Add new member',
-                backgroundColor: Colors.blueAccent,
-                textColor: Colors.white,
-                borderColor: Colors.blueAccent,
-              ),
-              const SizedBox(height: 10)
-            ],
+                AddMoreTestButton(
+                  onPressed: () async {
+                    // Navigate to add new member page
+                    await Navigator.of(
+                      context,
+                    ).push(SlidePageRoute(page: const AddNewMemberPage()));
+                    // Refresh the list when returning from add screen
+                    context.read<GetFamilyMembersCubit>().refreshMembers();
+                  },
+                  title: '+ Add new member',
+                  backgroundColor: Colors.blueAccent,
+                  textColor: Colors.white,
+                  borderColor: Colors.blueAccent,
+                ),
+                const SizedBox(height: 10)
+              ],
+            ),
           ),
         ),
       ),

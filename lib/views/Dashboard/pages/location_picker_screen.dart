@@ -1,10 +1,11 @@
-// take a defaut lag and long , and show our selected address to that location on map
+// save the selected lat and log in local storage
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LocationPickerScreen extends StatefulWidget {
   const LocationPickerScreen({super.key});
@@ -51,6 +52,17 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         zoom: 14,
       );
     }
+  }
+
+  Future<void> _saveLocationToLocalStorage(LatLng location, String address) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Storing as doubles and string
+    await prefs.setDouble('selected_lat', location.latitude);
+    await prefs.setDouble('selected_lng', location.longitude);
+    await prefs.setString('selected_address', address);
+
+    print("Saved to Local Storage: ${location.latitude}, ${location.longitude}");
   }
 
   Future<Position> _determinePosition() async {
@@ -198,9 +210,22 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context, _currentAddress);
-                print("Confirmed Address: $_currentAddress");
+              // onPressed: () {
+              //   Navigator.pop(context, _currentAddress);
+              //   print("Confirmed Address: $_currentAddress");
+              // },
+              onPressed: () async {
+                if (_currentMapCenter != null) {
+                  // 1. Save to SharedPreferences (for the 50KM filter logic)
+                  await _saveLocationToLocalStorage(_currentMapCenter!, _currentAddress);
+
+                  // 2. Return data to the previous screen
+                  Navigator.pop(context, {
+                    'lat': _currentMapCenter!.latitude,
+                    'lng': _currentMapCenter!.longitude,
+                    'address': _currentAddress,
+                  });
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,

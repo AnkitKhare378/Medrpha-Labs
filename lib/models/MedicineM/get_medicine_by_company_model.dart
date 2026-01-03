@@ -1,6 +1,6 @@
 // product_model.dart
 
-class GetMedicineByCompanyModel {
+class GetMedicineByCompanyModel1 {
   final int? id;
   final int? medicineId;
   final dynamic medicine; // Can be null, better to use dynamic or specify if it's always null/String/Object
@@ -15,7 +15,7 @@ class GetMedicineByCompanyModel {
   final String? modifiedBy;
   final DateTime? modifiedDate;
 
-  GetMedicineByCompanyModel({
+  GetMedicineByCompanyModel1({
     this.id,
     this.medicineId,
     this.medicine,
@@ -32,7 +32,7 @@ class GetMedicineByCompanyModel {
   });
 
   // Factory constructor for creating a ProductModel instance from a JSON map
-  factory GetMedicineByCompanyModel.fromJson(Map<String, dynamic> json) {
+  factory GetMedicineByCompanyModel1.fromJson(Map<String, dynamic> json) {
     // Helper function to safely parse potential numeric types to double
     double? _parseDouble(dynamic value) {
       if (value == null) return null;
@@ -47,7 +47,7 @@ class GetMedicineByCompanyModel {
       return DateTime.tryParse(dateString);
     }
 
-    return GetMedicineByCompanyModel(
+    return GetMedicineByCompanyModel1(
       id: json['id'] as int?,
       medicineId: json['medicineId'] as int?,
       medicine: json['medicine'],

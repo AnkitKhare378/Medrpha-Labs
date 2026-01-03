@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../../models/LabM/lab_model.dart';
 import '../../../../view_model/LabVM/AllLab/lab_bloc.dart';
 import '../../../../view_model/LabVM/AllLab/lab_event.dart';
 import '../../../../view_model/LabVM/AllLab/lab_state.dart';
 import '../../../Dashboard/widgets/slide_page_route.dart';
-import '../../TestScreen/lab_test_list_page.dart';
 import '../widgets/lab_shimmer_loading.dart';
 import 'company_medicine_view.dart';
 
@@ -20,32 +21,71 @@ class AllLabMedicinePage extends StatefulWidget {
 
 class _AllLabMedicinePageState extends State<AllLabMedicinePage> {
   static const String _imageBaseUrl = 'https://www.online-tech.in/LabImage/';
-  List<LabModel> selectedLabs = [];
+
+  double? userLat;
+  double? userLng;
+  bool _isLoadingPrefs = true; // Track if location is loaded
 
   @override
   void initState() {
     super.initState();
+    _loadUserLocation();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<LabBloc>().add(FetchLabsEvent());
     });
   }
 
-  // Toggle function now accepts LabModel
-  void toggleCompare(LabModel lab) {
-    setState(() {
-      if (selectedLabs.contains(lab)) {
-        selectedLabs.remove(lab);
-      } else if (selectedLabs.length < 5) {
-        selectedLabs.add(lab);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("You can only select up to 5 labs for comparison."),
-            duration: Duration(seconds: 2),
-          ),
-        );
+  Future<void> _loadUserLocation() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        userLat = prefs.getDouble('selected_lat');
+        userLng = prefs.getDouble('selected_lng');
+        _isLoadingPrefs = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingPrefs = false);
+    }
+  }
+
+  /// Safely calculates distance between two points
+  double _calculateDistance(String? latStr, String? lngStr) {
+    if (userLat == null || userLng == null || latStr == null || lngStr == null) {
+      return 0.0;
+    }
+    final double? lat = double.tryParse(latStr);
+    final double? lng = double.tryParse(lngStr);
+
+    if (lat == null || lng == null) return 0.0;
+
+    return Geolocator.distanceBetween(userLat!, userLng!, lat, lng);
+  }
+
+  List<LabModel> _getNearbyStores(List<LabModel> allLabs) {
+    // Filter first
+    List<LabModel> nearbyLabs = allLabs.where((lab) {
+      if (lab.isMedicineStore != true) return false;
+
+      double distanceInMeters = _calculateDistance(lab.latitude, lab.longnitude);
+
+      // If location is unknown, you might want to show it anyway or hide it.
+      // Here we hide it if location is available but it's too far.
+      if (userLat != null && userLng != null) {
+        return distanceInMeters <= 50000; // 50 KM Limit
       }
-    });
+      return true; // If user location is missing, show all medicine stores
+    }).toList();
+
+    // Sort only if we have user coordinates
+    if (userLat != null && userLng != null) {
+      nearbyLabs.sort((a, b) {
+        double distA = _calculateDistance(a.latitude, a.longnitude);
+        double distB = _calculateDistance(b.latitude, b.longnitude);
+        return distA.compareTo(distB);
+      });
+    }
+
+    return nearbyLabs;
   }
 
   @override
@@ -53,140 +93,105 @@ class _AllLabMedicinePageState extends State<AllLabMedicinePage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(
-          widget.labName,
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
+        title: Text(widget.labName, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         backgroundColor: Colors.blueAccent,
         foregroundColor: Colors.white,
       ),
-      body: BlocBuilder<LabBloc, LabState>(
+      body: _isLoadingPrefs
+          ? const LabShimmerLoading()
+          : BlocBuilder<LabBloc, LabState>(
         builder: (context, state) {
-          if (state is LabLoading) {
-            return const SingleChildScrollView(
-              padding: EdgeInsets.all(16),
-              child: LabShimmerLoading(),
-            );
-          }
+          if (state is LabLoading) return const LabShimmerLoading();
+
           if (state is LabError) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Failed to load labs: ${state.message}',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(color: Colors.red)),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.read<LabBloc>().add(FetchLabsEvent());
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
+                padding: const EdgeInsets.all(20.0),
+                child: Text(state.message,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(color: Colors.red)),
               ),
             );
           }
-          if (state is LabLoaded) {
-            final labs = state.labs;
 
-            if (labs.isEmpty) {
+          if (state is LabLoaded) {
+            final stores = _getNearbyStores(state.labs);
+
+            if (stores.isEmpty) {
               return Center(
-                child: Text('No labs found for your criteria.', style: GoogleFonts.poppins()),
+                child: Text('No stores found nearby.', style: GoogleFonts.poppins()),
               );
             }
 
-            return SingleChildScrollView(
+            return ListView.builder(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // 🔹 Labs List
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: labs.length,
-                    itemBuilder: (context, index) {
-                      final lab = labs[index];
-                      final isSelected = selectedLabs.contains(lab);
+              itemCount: stores.length,
+              itemBuilder: (context, index) {
+                final lab = stores[index];
 
-                      // Construct the full image URL
-                      final imageUrl = lab.labImage != null && lab.labImage!.isNotEmpty
-                          ? '$_imageBaseUrl${lab.labImage}'
-                          : null;
+                // Safe distance calculation for UI
+                double distKm = _calculateDistance(lab.latitude, lab.longnitude) / 1000;
 
-                      return InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(SlidePageRoute(page: CompanyMedicineView(companyId: lab.companyId ?? 0, companyName: lab.company ?? "")),);
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: isSelected ? Colors.blueAccent : Colors.grey.shade300,
-                              width: 1.5,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
+                final imageUrl = (lab.labImage != null && lab.labImage!.isNotEmpty)
+                    ? '$_imageBaseUrl${lab.labImage}'
+                    : null;
+
+                return InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(SlidePageRoute(
+                      page: CompanyMedicineView(
+                        storeId: lab.id ?? 0,
+                        companyName: lab.labName ?? "Unknown Store",
+                      ),
+                    ));
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey.shade300, width: 1.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: imageUrl != null
+                              ? Image.network(
+                            imageUrl,
+                            width: 60, height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(width: 60, height: 60, color: Colors.grey.shade200, child: const Icon(Icons.broken_image)),
+                          )
+                              : Container(width: 60, height: 60, color: Colors.grey.shade200, child: const Icon(Icons.store)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // 🖼️ Image Container Updated
-                              Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: imageUrl != null
-                                      ? Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return const Center(
-                                          child: CircularProgressIndicator(strokeWidth: 2));
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Center(
-                                          child: Icon(Icons.business, size: 40, color: Colors.grey));
-                                    },
-                                  )
-                                      : const Center(
-                                      child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey)),
-                                ),
-                              ),
-                              // ------------------------------------
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(lab.labName, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
-                                    Text(lab.description ?? "", style: GoogleFonts.poppins(fontSize: 12,)),
-                                  ],
-                                ),
-                              ),
+                              Text(lab.labName ?? "Unnamed Store",
+                                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                              if (userLat != null)
+                                Text("${distKm.toStringAsFixed(1)} KM away",
+                                    style: GoogleFonts.poppins(fontSize: 12, color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                              Text(lab.description ?? "",
+                                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
                             ],
                           ),
                         ),
-                      );
-                    },
+                        const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                );
+              },
             );
           }
-          return const SingleChildScrollView(
-            padding: EdgeInsets.all(16),
-            child: LabShimmerLoading(),
-          );
+          return const Center(child: CircularProgressIndicator());
         },
       ),
     );

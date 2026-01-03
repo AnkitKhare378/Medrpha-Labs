@@ -93,8 +93,7 @@ class ProfileHeader extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(name,
-                            style: GoogleFonts.poppins(
-                                fontSize: 20, fontWeight: FontWeight.w700, color: const Color(0xFF1976D2))),
+                            style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: const Color(0xFF1976D2))),
                         const SizedBox(height: 4),
                         Text(phone,
                             style: GoogleFonts.poppins(fontSize: 15, color: Colors.grey.shade600)),

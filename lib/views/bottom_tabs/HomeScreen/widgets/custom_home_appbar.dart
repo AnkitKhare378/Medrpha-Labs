@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:medrpha_labs/view_model/CustomerVM/customer_state.dart';
 import 'package:medrpha_labs/views/Dashboard/pages/location_picker_screen.dart';
 import 'package:medrpha_labs/views/Dashboard/pages/notification_page.dart';
+import 'package:medrpha_labs/views/bottom_tabs/HomeScreen/widgets/app_bar_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../models/CustomerM/customer_model.dart';
 import '../../../../view_model/CustomerVM/customer_bloc.dart';
@@ -73,10 +74,18 @@ class _CustomHomeAppBarState extends State<CustomHomeAppBar> {
       ),
     );
 
-    if (result != null && result is String && mounted) {
+    // Check if result is a Map (since you are returning multiple values now)
+    if (result != null && result is Map<String, dynamic> && mounted) {
       setState(() {
-        _displayLocation = result;
+        // Update the display string using the 'address' key from the map
+        _displayLocation = result['address'] ?? "Unknown Location";
+
+        // Optional: Store coordinates locally in this class if needed
+        // _selectedLat = result['lat'];
+        // _selectedLng = result['lng'];
       });
+
+      print("Location Updated to: $_displayLocation");
     }
   }
 
@@ -144,34 +153,8 @@ class _CustomHomeAppBarState extends State<CustomHomeAppBar> {
                 ],
               ),
 
-              // Right Side: Notification & Select Labs
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(FontAwesomeIcons.bell, size: 16,),
-                    color: Colors.black,
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) =>
-                          const NotificationPage(),
-                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                            const begin = Offset(1.0, 0.0);
-                            const end = Offset.zero;
-                            const curve = Curves.easeInOut;
+              AppBarIcons(),
 
-                            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                            return SlideTransition(
-                              position: animation.drive(tween),
-                              child: child,
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
             ],
           ),
         );

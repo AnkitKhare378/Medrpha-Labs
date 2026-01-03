@@ -6,7 +6,7 @@ import '../../models/CategoryM/categoty_model.dart';
 class CategoryRepository {
   final String baseUrl = "https://www.online-tech.in/api";
 
-  Future<List<CategoryModel>> fetchCategories() async {
+  Future<List<CategoryModelMain>> fetchCategories() async {
     final uri = Uri.parse("$baseUrl/MasterAPI/GetCategories");
     print("👉 API URL: $uri");
 
@@ -16,7 +16,7 @@ class CategoryRepository {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
-      return data.map((e) => CategoryModel.fromJson(e)).toList();
+      return data.map((e) => CategoryModelMain.fromJson(e)).toList();
     } else {
       throw Exception("Failed to load categories: ${response.statusCode}");
     }
