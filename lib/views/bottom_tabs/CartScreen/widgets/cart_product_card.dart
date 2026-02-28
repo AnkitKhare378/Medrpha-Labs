@@ -52,6 +52,7 @@ class _CartProductCardState extends State<CartProductCard> {
     final int productId = cartItem?.productId ?? 0;
     final int categoryId = cartItem?.categoryId ?? 0; // Get category ID
     final int userId = _currentUserId ?? 0;
+    final int? labId = cartItem?.labId;
 
     void handleAdd() {
       if (productId != 0) {
@@ -61,6 +62,7 @@ class _CartProductCardState extends State<CartProductCard> {
             userId: userId,
             productId: productId,
             categoryId: categoryId,
+            labId: labId ?? 0,
             name: widget.product.name,
             originalPrice: originalPrice,
             discountedPrice: discountedPrice,
@@ -69,6 +71,7 @@ class _CartProductCardState extends State<CartProductCard> {
           // Others use add1
           cart.add1(
             widget.product.name,
+            1,
             originalPrice,
             discountedPrice,
             categoryId,
@@ -83,6 +86,7 @@ class _CartProductCardState extends State<CartProductCard> {
         if (categoryId == 1) {
           cart.remove(
             userId: userId,
+            labId: labId ?? 0,
             productId: productId,
             name: widget.product.name,
             categoryId: categoryId,
@@ -90,6 +94,7 @@ class _CartProductCardState extends State<CartProductCard> {
         } else {
           cart.remove(
             userId: userId,
+            labId: labId ?? 0,
             productId: productId,
             name: widget.product.name,
             categoryId: categoryId,
@@ -213,7 +218,6 @@ class _CartProductCardState extends State<CartProductCard> {
                   ),
                   const SizedBox(height: 4),
 
-                  if (discountedPrice.isNotEmpty)
                     Text(
                       '₹$discountedPrice',
                       style: GoogleFonts.poppins(
@@ -223,7 +227,7 @@ class _CartProductCardState extends State<CartProductCard> {
                       ),
                     ),
 
-                  if (originalPrice.isNotEmpty)
+
                     Text(
                       '₹$originalPrice',
                       style: GoogleFonts.poppins(

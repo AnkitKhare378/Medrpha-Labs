@@ -1,5 +1,4 @@
-// adv_banner.dart (Combined with BLoC Logic)
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:medrpha_labs/views/bottom_tabs/HomeScreen/widgets/banner_shimmer.dart';
@@ -7,7 +6,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../../../data/repositories/all_banner_service/get_all_banner_service.dart';
 import '../../../../view_model/BannerVM/get_all_banner_view_model.dart';
 
-const String _imageHostUrl = 'https://www.online-tech.in/uploads/';
+const String _imageHostUrl = 'https://www.online-tech.in/BannerImage/';
 
 class AdvBanner extends StatefulWidget {
   const AdvBanner({super.key});
@@ -17,24 +16,63 @@ class AdvBanner extends StatefulWidget {
 }
 
 class _AdvBannerState extends State<AdvBanner> {
-  // Page controller remains for the PageView
   final PageController _controller = PageController();
+  late GetAllBannerBloc _bannerBloc;
+
+  Timer? _timer;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _bannerBloc = GetAllBannerBloc(GetAllBannerService())..add(const FetchBanners());
+  }
+
+  void _startAutoSlide(int totalPages) {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (_controller.hasClients) {
+        if (_currentPage < totalPages - 1) {
+          _currentPage++;
+        } else {
+          _currentPage = 0;
+        }
+
+        _controller.animateToPage(
+          _currentPage,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _timer?.cancel();
     _controller.dispose();
+    _bannerBloc.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<GetAllBannerBloc>(
-      create: (context) => GetAllBannerBloc(GetAllBannerService())
-        ..add(const FetchBanners()),
+    return BlocProvider.value(
+      value: _bannerBloc,
+      child: BlocConsumer<GetAllBannerBloc, GetAllBannerState>(
+        listener: (context, state) {
+          if (state is GetAllBannerLoaded) {
+            // Filter list to count only valid items for Category 1
+            final filteredCount = state.banners
+                .where((b) => b.bannerCategoryId == 3 && b.image != null && b.image!.isNotEmpty)
+                .length;
 
-      child: BlocBuilder<GetAllBannerBloc, GetAllBannerState>(
+            if (filteredCount > 0) {
+              _startAutoSlide(filteredCount);
+            }
+          }
+        },
         builder: (context, state) {
-
           if (state is GetAllBannerLoading) {
             return const SizedBox(
               height: 180,
@@ -42,35 +80,22 @@ class _AdvBannerState extends State<AdvBanner> {
             );
           }
 
-          // --- Handle Error State ---
-          else if (state is GetAllBannerError) {
-            // return Container(
-            //   height: 180,
-            //   color: Colors.red.shade100,
-            //   padding: const EdgeInsets.all(16.0),
-            //   child: Center(
-            //     child: Text(
-            //       'Error loading banners: ${state.message}',
-            //       textAlign: TextAlign.center,
-            //       style: const TextStyle(color: Colors.red),
-            //     ),
-            //   ),
-            // );
-            return SizedBox(height: 0,);
+          if (state is GetAllBannerError) {
+            return const SizedBox.shrink();
           }
 
-          // --- Handle Loaded State ---
-          else if (state is GetAllBannerLoaded) {
-
-            // Generate full URLs from the loaded model data
+          if (state is GetAllBannerLoaded) {
+            // Apply filtering: ONLY Category 1 AND non-null images
             final List<String> bannerImageUrls = state.banners
-                .where((b) => b.image != null)
-                .map((b) => '$_imageHostUrl${b.image}')
+                .where((b) =>
+            b.bannerCategoryId == 3 &&
+                b.image != null &&
+                b.image!.isNotEmpty
+            )
+                .map((b) => Uri.encodeFull('$_imageHostUrl${b.image}'))
                 .toList();
 
-            if (bannerImageUrls.isEmpty) {
-              return const SizedBox.shrink(); // Hide if no banners found
-            }
+            if (bannerImageUrls.isEmpty) return const SizedBox.shrink();
 
             return Column(
               children: [
@@ -78,30 +103,27 @@ class _AdvBannerState extends State<AdvBanner> {
                   height: 180,
                   child: PageView.builder(
                     controller: _controller,
-                    itemCount: bannerImageUrls.length, // Use fetched count
+                    itemCount: bannerImageUrls.length,
+                    onPageChanged: (index) {
+                      _currentPage = index;
+                    },
                     itemBuilder: (context, index) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: Image.network(
-                            bannerImageUrls[index], // Use fetched URL
+                            bannerImageUrls[index],
                             fit: BoxFit.cover,
                             width: double.infinity,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  strokeWidth: 2,
-                                ),
-                              );
-                            },
                             errorBuilder: (context, error, stackTrace) {
-                              return const Center(child: Icon(Icons.error, color: Colors.grey));
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: const Icon(Icons.broken_image, color: Colors.grey),
+                              );
                             },
                           ),
                         ),
@@ -112,19 +134,17 @@ class _AdvBannerState extends State<AdvBanner> {
                 const SizedBox(height: 12),
                 SmoothPageIndicator(
                   controller: _controller,
-                  count: bannerImageUrls.length, // Use fetched count
+                  count: bannerImageUrls.length,
                   effect: ExpandingDotsEffect(
                     dotHeight: 8,
                     dotWidth: 8,
-                    activeDotColor: Colors.blue,
+                    activeDotColor: Theme.of(context).primaryColor,
                     dotColor: Colors.grey.shade300,
                   ),
                 ),
               ],
             );
           }
-
-          // --- Handle Initial/Default State ---
           return const SizedBox.shrink();
         },
       ),

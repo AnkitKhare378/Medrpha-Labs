@@ -3,13 +3,27 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
 import '../../views/Dashboard/dashboard_screen.dart';
 
 class NotificationService {
   final FirebaseMessaging messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
   FlutterLocalNotificationsPlugin();
+
+  // Get device FCM token and send to backend
+  Future<void> updateTokenToBackend(int userId) async {
+    String? token = await messaging.getToken();
+    print("🔑 FCM Token: $token");
+
+    if (token != null && token.isNotEmpty) {
+      // TODO: Call your specific API here to save the token
+      // Example:
+      // await customerService.updateFcmToken(userId, token);
+
+      // For now, let's just simulate the logic your backend developer wants:
+      print("🚀 Sending Token to Backend for User $userId...");
+    }
+  }
 
   // Request notification permission
   void requestNotificationPermission() async {
@@ -54,11 +68,11 @@ class NotificationService {
 
   // Local notification setup
   Future<void> initLocalNotification(BuildContext context, RemoteMessage message) async {
+    // Change ic_notification to @mipmap/ic_launcher
     const AndroidInitializationSettings androidInitSettings =
-    AndroidInitializationSettings("ic_notification");
-    const DarwinInitializationSettings iosInitSettings =
-    DarwinInitializationSettings();
+    AndroidInitializationSettings("@mipmap/ic_launcher");
 
+    const DarwinInitializationSettings iosInitSettings = DarwinInitializationSettings();
     const InitializationSettings initializationSettings = InitializationSettings(
       android: androidInitSettings,
       iOS: iosInitSettings,
@@ -66,21 +80,20 @@ class NotificationService {
 
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
-      onDidReceiveNotificationResponse: (_) {
+      onDidReceiveNotificationResponse: (response) {
         handleMessage(context, message);
       },
     );
   }
 
-  // Show notification
   Future<void> showNotification(RemoteMessage message) async {
     AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       "default_channel",
       "Default Channel",
-      importance: Importance.high,
+      importance: Importance.max, // Set to max for heads-up notification
       priority: Priority.high,
       playSound: true,
-      icon: "ic_notification",
+      icon: "@mipmap/ic_launcher",
     );
 
     DarwinNotificationDetails iosDetails = const DarwinNotificationDetails(

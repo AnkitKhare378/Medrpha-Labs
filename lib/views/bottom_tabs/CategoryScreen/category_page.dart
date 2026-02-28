@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:medrpha_labs/views/bottom_tabs/CategoryScreen/popular_products.dart';
+import 'package:medrpha_labs/views/bottom_tabs/ProfileScreen/pages/save_for_later_page.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../models/TestM/test_search_model.dart';
 import '../../../pages/dashboard/bloc/categtory_bloc/category_bloc.dart';
 import '../../../pages/dashboard/bloc/categtory_bloc/category_event.dart';
 import '../../../pages/dashboard/bloc/categtory_bloc/category_state.dart';
+import '../../../view_model/TestVM/AllTestSearch/all_test_serach_model.dart';
+import '../../Dashboard/widgets/slide_page_route.dart';
+import '../HomeScreen/pages/package_detail_page.dart';
+import '../HomeScreen/widgets/custom_search_bar.dart';
+import '../HomeScreen/widgets/shop_by_category.dart';
+import '../TestScreen/lab_test_detail_page.dart';
+import '../TestScreen/lab_test_list_page.dart';
 import 'category_item.dart';
 import 'sections/popular_brands_section.dart';
 
@@ -21,92 +30,24 @@ class CategoryPage extends StatefulWidget {
 
 class _CategoryPageState extends State<CategoryPage> {
   int selectedCategoryIndex = 0;
+  bool _isSearching = false;
+  final TextEditingController myController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // 🚀 Dispatch the event to load categories when the page initializes
-    // This ensures the API call starts immediately.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CategoryBloc>().add(FetchCategories());
     });
   }
 
-
-  final List<CategoryItem> categoryItems = [
-    CategoryItem(
-      1,
-      'Medicines',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135829698.png',
-      Colors.pink.shade100,
-    ),
-    CategoryItem(
-      2,
-      'Devices',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135873220.png',
-      Colors.purple.shade100,
-    ),
-    CategoryItem(
-      3,
-      'Personal Care',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712129336907.png',
-      Colors.orange.shade100,
-    ),
-    CategoryItem(
-      4,
-      'Surgicals',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712129450727.png',
-      Colors.blue.shade100,
-    ),
-    CategoryItem(
-      5,
-      'Wellness',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135480816.png',
-      Colors.red.shade100,
-    ),
-    CategoryItem(
-      6,
-      'Fitness',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135324627.png',
-      Colors.brown.shade100,
-    ),
-    CategoryItem(
-      7,
-      'Petcare',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712043199167.png',
-      Colors.grey.shade100,
-    ),
-    CategoryItem(
-      8,
-      'Eyewear',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712129539687.png',
-      Colors.green.shade100,
-    ),
-    CategoryItem(
-      9,
-      'Women Care',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712129579415.png',
-      Colors.pink.shade100,
-    ),
-    CategoryItem(
-      10,
-      'Treatments',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1712129613695.png',
-      Colors.blue.shade100,
-    ),
-    CategoryItem(
-      11,
-      'Ayush',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1711135920391.png',
-      Colors.orange.shade100,
-    ),
-    CategoryItem(
-      12,
-      'Mom & Baby',
-      'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/original/theme-image-1716811610519.png',
-      Colors.purple.shade100,
-    ),
-  ];
+  void _onSearchChanged(String query) {
+    if (query.isEmpty) {
+      context.read<TestSearchBloc>().add(ClearSearch());
+    } else {
+      context.read<TestSearchBloc>().add(SearchQueryChanged(query));
+    }
+  }
 
   final List<OfferCard> newOnNetmedsOffers = [
     OfferCard(
@@ -128,8 +69,6 @@ class _CategoryPageState extends State<CategoryPage> {
       gradient: [Color(0xFFE8F5E8), Color(0xFF66BB6A)],
     ),
   ];
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -165,9 +104,19 @@ class _CategoryPageState extends State<CategoryPage> {
                         ),
                       ),
                     ),
-                    _buildHeaderButton(Iconsax.search_normal_1, () {}),
+                    _buildHeaderButton(
+                        _isSearching ? Icons.close : Iconsax.search_normal_1,
+                            () {
+                          setState(() {
+                            _isSearching = !_isSearching;
+                            if (!_isSearching) myController.clear();
+                          });
+                        }
+                    ),
                     const SizedBox(width: 12),
-                    _buildHeaderButton(Iconsax.bookmark, () {}),
+                    _buildHeaderButton(Iconsax.bookmark, () {
+                      Navigator.of(context).push(SlidePageRoute(page: SaveForLaterPage()));
+                    }),
                   ],
                 ),
               ),
@@ -180,6 +129,26 @@ class _CategoryPageState extends State<CategoryPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (_isSearching)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 15),
+                      child: CustomSearchBar(
+                          controller: myController,
+                          onChanged: _onSearchChanged
+                      ),
+                    ),
+
+                  BlocBuilder<TestSearchBloc, TestSearchState>(
+                    builder: (context, state) {
+                      if (state is SearchLoading) return const LinearProgressIndicator();
+                      if (state is SearchSuccess && state.results.isNotEmpty) {
+                        return Column(
+                          children: state.results.map((test) => _buildTestResultTile(context, test)).toList(),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
                   const SizedBox(height: 20),
 
                   // Category Grid
@@ -259,10 +228,10 @@ class _CategoryPageState extends State<CategoryPage> {
                   ),
 
                   // Offer Banner
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _buildOfferBanner(),
-                  ),
+                  // Padding(
+                  //   padding: const EdgeInsets.symmetric(horizontal: 20),
+                  //   child: _buildOfferBanner(),
+                  // ),
 
                   const SizedBox(height: 10),
 
@@ -275,8 +244,8 @@ class _CategoryPageState extends State<CategoryPage> {
                     child: Text(
                       'New on Medrpha',
                       style: GoogleFonts.poppins(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.textColor,
                       ),
                     ),
@@ -300,108 +269,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
                   const SizedBox(height: 40),
 
-                  // All Categories Section
-                  Padding(
-                    padding: const EdgeInsets.only(left: 20),
-                    child: Text(
-                      'All Categories',
-                      style: GoogleFonts.poppins(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textColor,
-                      ),
-                    ),
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: BlocBuilder<CategoryBloc, CategoryState>(
-                      builder: (context, state) {
-                        if (state is CategoryLoading) {
-                          return GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 20,
-                              childAspectRatio: 0.72,
-                            ),
-                            itemCount: 8, // Placeholder count
-                            itemBuilder: (context, index) {
-                              return Shimmer.fromColors(
-                                baseColor: Colors.grey[300]!,
-                                highlightColor: Colors.grey[100]!,
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      width: 60,
-                                      height: 60,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      width: 60,
-                                      height: 8,
-                                      color: Colors.white,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        } else if (state is CategoryLoaded) {
-                          final categories = state.categories;
-
-                          if (categories.isEmpty) {
-                            return Center(
-                              child: Text('No categories found.', style: GoogleFonts.poppins()),
-                            );
-                          }
-
-                          return GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 20,
-                              childAspectRatio: 0.72,
-                            ),
-                            itemCount: categories.length, // ⭐️ Dynamic count
-                            itemBuilder: (context, index) {
-                              final category = categories[index];
-                              final imageUrl =
-                                  "${category.image.replaceAll("\\", "/")}"; // ⭐️ Dynamic image URL
-
-                              return buildCategoryItem( // Use the existing buildCategoryItem helper
-                                CategoryItem(
-                                  category.id,
-                                  category.name,
-                                  imageUrl,
-                                  Colors.blue.shade100, // Replace with dynamic color if available
-                                ),
-                                context,
-                              );
-                            },
-                          );
-                        } else if (state is CategoryError) {
-                          return Center(
-                            child: Text(
-                                'Failed to load categories: ${state.message}',
-                                style: GoogleFonts.poppins(color: Colors.red)
-                            ),
-                          );
-                        } else {
-                          return const SizedBox();
-                        }
-                      },
-                    ),
-                  ),
+                  ShopByCategory(isCategory: true,),
 
                   const SizedBox(height: 30),
                 ],
@@ -427,115 +295,6 @@ class _CategoryPageState extends State<CategoryPage> {
       ),
     );
   }
-
-  // Offer Banner Widget
-  Widget _buildOfferBanner() {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        width: double.infinity,
-        height: 90,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Image.network(
-            'https://cdn.netmeds.tech/v2/plain-cake-860195/netmed/wrkr/nmz/company/2/applications/65f562c1504a59a67f529ad4/theme/pictures/free/resize-w:500/theme-image-1750851318549.png?dpr=3',
-            fit: BoxFit.contain,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
-                child: Container(
-                  width: double.infinity,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Category item widget
-  Widget _buildCategoryItem(CategoryItem item) {
-    return GestureDetector(
-      onTap: () {},
-      child: Column(
-        children: [
-          Container(
-            width: 75,
-            height: 75,
-            decoration: BoxDecoration(
-              color: item.backgroundColor,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  offset: const Offset(0, 2),
-                  blurRadius: 8,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                item.imageUrl,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
-                    child: Container(
-                      width: 75,
-                      height: 75,
-                      color: Colors.white,
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: item.backgroundColor,
-                    child: const Icon(
-                      Iconsax.category,
-                      color: AppColors.primaryColor,
-                      size: 32,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: 85,
-            child: Text(
-              item.name,
-              style: GoogleFonts.poppins(
-                fontSize: 8,
-                color: AppColors.textColor,
-                fontWeight: FontWeight.w500,
-                height: 1.2,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Brand item widget
-
-
   // New offer card widget
   Widget _buildNewOfferCard(OfferCard offer) {
     return GestureDetector(
@@ -645,9 +404,28 @@ class _CategoryPageState extends State<CategoryPage> {
       ),
     );
   }
+
+  Widget _buildTestResultTile(BuildContext context, TestSearchModel test) {
+    return ListTile(
+      leading: const Icon(Icons.medical_services_outlined, color: AppColors.primaryColor),
+      title: Text(test.name, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
+      onTap: () {
+        // 1. Clear the Bloc state so results disappear
+        context.read<TestSearchBloc>().add(ClearSearch());
+
+        // 2. Clear the Text field UI
+        myController.clear();
+        if (test.groupType == 2) {
+          Navigator.of(context).push(SlidePageRoute(page: LabTestDetailPage(testId: test.id)));
+        } else if (test.groupType == 1) {
+          Navigator.of(context).push(SlidePageRoute(page: LabTestListPage(labName: test.name, labId: test.id)));
+        } else {
+          Navigator.of(context).push(SlidePageRoute(page: PackageDetailPage(packageId: test.id)));
+        }
+      },
+    );
+  }
 }
-
-
 
 class OfferCard {
   final String title;

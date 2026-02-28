@@ -14,6 +14,7 @@ import '../../../../view_model/provider/save_for_later_provider.dart';
 import '../../../Dashboard/dashboard_screen.dart';
 import '../../../Dashboard/widgets/slide_page_route.dart';
 import '../../CartScreen/store/cart_notifier.dart';
+import '../../CartScreen/widgets/lab_mismatched_dialog.dart';
 import '../lab_test_detail_page.dart';
 
 class TestCard extends StatefulWidget {
@@ -71,6 +72,8 @@ class _TestCardState extends State<TestCard> {
     final initialIsSaved = saveForLater.savedItems.any((item) => item.name == widget.test.testName);
     final bool isThisProductLoading = cart.isProductLoading(productId);
     final name = widget.test.testName;
+    final lat =  widget.test.lab?.latitude;
+    final long = widget.test.lab?.longitude;
     final id = productId;
     final price = "₹${widget.test.testPrice.toStringAsFixed(0)}";
     const String originalPriceString = "₹700";
@@ -95,8 +98,8 @@ class _TestCardState extends State<TestCard> {
               localProvider.addItem(
                 id: id,
                 name: name,
-                originalPrice: originalPriceString,
-                discountedPrice: discountedPriceString,
+                originalPrice: widget.test.sellingPrice,
+                discountedPrice: widget.test.testPrice,
               );
             } else {
               localProvider.removeItem(id);
@@ -126,7 +129,44 @@ class _TestCardState extends State<TestCard> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network("$imageBaseUrl${widget.test.testImage}", height: 60,width: 60, fit: BoxFit.cover,)
+                  child: widget.test.testImage.isEmpty
+                      ? Image.network(
+                    "https://cdn-icons-png.flaticon.com/128/5409/5409477.png",
+                    height: 60,
+                    width: 60,
+                    fit: BoxFit.cover,
+                  )
+                      : Image.network(
+                    "$imageBaseUrl${widget.test.testImage}",
+                    height: 60,
+                    width: 60,
+                    fit: BoxFit.cover,
+                    // ✅ This handles 404s or invalid URLs from the server
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image.network(
+                        "https://cdn-icons-png.flaticon.com/128/5409/5409477.png",
+                        height: 60,
+                        width: 60,
+                        fit: BoxFit.cover,
+                      );
+                    },
+                    // Optional: Show a loading spinner while the image is downloading
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: 60,
+                        width: 60,
+                        color: Colors.grey[100],
+                        child: const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -244,7 +284,7 @@ class _TestCardState extends State<TestCard> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          if(userId != 0) ...[
+                          if (userId != 0) ...[
                             if (isThisProductLoading)
                               const SizedBox(
                                 width: 40,
@@ -255,20 +295,45 @@ class _TestCardState extends State<TestCard> {
                               )
                             else if (itemQtyInCart == 0)
                               ElevatedButton.icon(
-                                onPressed: isThisProductLoading ? null : () {
-                                  cart.add(
-                                    categoryId: 2,
-                                    userId: userId,
-                                    productId: productId,
-                                    name: name,
-                                    originalPrice: originalPriceString,
-                                    discountedPrice: discountedPriceString,
-                                  );
+                                onPressed: isThisProductLoading
+                                    ? null
+                                    : () async {
+                                  try {
+                                    // Attempt to add to cart
+                                    await cart.add(
+                                      categoryId: 2,
+                                      userId: userId,
+                                      labId: widget.test.labId,
+                                      productId: productId,
+                                      name: name,
+                                      originalPrice: widget.test.sellingPrice,
+                                      discountedPrice: widget.test.testPrice,
+                                    );
+                                  } catch (e) {
+                                    // If lab mismatch occurs, show the dialog
+                                    if (e.toString() == 'LAB_MISMATCH') {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => LabMismatchedDialog(
+                                          cartProvider: cart,
+                                          userId: userId,
+                                          productId: productId,
+                                          name: name,
+                                          categoryId: 2,
+                                          labId: widget.test.labId,
+                                          labName: widget.test.testName,
+                                          originalPrice: widget.test.testPrice,
+                                          discountedPrice: widget.test.testPrice,
+                                        ),
+                                      );
+                                    }
+                                  }
                                 },
                                 icon: const Icon(Icons.add, size: 16),
                                 label: const Text("Add"),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blueAccent, foregroundColor: Colors.white,
+                                  backgroundColor: Colors.blueAccent,
+                                  foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                   textStyle: GoogleFonts.poppins(fontSize: 13),
@@ -276,10 +341,13 @@ class _TestCardState extends State<TestCard> {
                               )
                             else
                               ElevatedButton.icon(
-                                onPressed: isThisProductLoading ? null : () {
+                                onPressed: isThisProductLoading
+                                    ? null
+                                    : () {
                                   cart.remove(
                                     categoryId: 2,
                                     userId: userId,
+                                    labId: widget.test.labId,
                                     productId: productId,
                                     name: name,
                                   );
@@ -287,7 +355,8 @@ class _TestCardState extends State<TestCard> {
                                 icon: const Icon(Icons.remove, size: 16),
                                 label: const Text("Remove"),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.redAccent, foregroundColor: Colors.white,
+                                  backgroundColor: Colors.redAccent,
+                                  foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                   textStyle: GoogleFonts.poppins(fontSize: 13),

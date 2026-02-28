@@ -19,22 +19,21 @@ class SaveForLaterProvider extends ChangeNotifier {
   void addItem({
     required int id,
     required String name,
-    required String originalPrice,
-    required String discountedPrice,
+    required double originalPrice,
+    required double discountedPrice,
     String? imageUrl,
   }) {
     // FIX 2: Check map for existence using the int id
     if (_items.containsKey(id)) return;
 
-    String cleanOriginal = originalPrice.replaceAll(RegExp(r'[^\d.]'), '');
-    String cleanDiscounted = discountedPrice.replaceAll(RegExp(r'[^\d.]'), '');
+    // String cleanOriginal = originalPrice.replaceAll(RegExp(r'[^\d.]'), '');
 
     final newItem = SavedItem(
       id: id,
       name: name,
       imageUrl: imageUrl,
-      originalPrice: cleanOriginal,
-      discountedPrice: cleanDiscounted,
+      originalPrice: originalPrice,
+      discountedPrice: discountedPrice,
     );
 
     // FIX 3: Use the int 'id' as the key
@@ -60,7 +59,7 @@ class SaveForLaterProvider extends ChangeNotifier {
     if (item != null) {
       // FIX 5: Remove the item using its ID
       _items.remove(item.id);
-      _cartProvider.add1(item.name, item.originalPrice, item.discountedPrice, 1);
+      _cartProvider.add1(item.name, 1, item.originalPrice, item.discountedPrice, 1);
       notifyListeners();
     }
   }
@@ -76,8 +75,8 @@ class SavedItem {
   final int id;
   final String name;
   final String? imageUrl;
-  final String originalPrice;
-  final String discountedPrice;
+  final double originalPrice;
+  final double discountedPrice;
 
   SavedItem({
     required this.id,

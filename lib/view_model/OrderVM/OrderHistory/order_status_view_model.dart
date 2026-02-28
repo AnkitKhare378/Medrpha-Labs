@@ -12,8 +12,10 @@ abstract class OrderStatusEvent {}
 class UpdateOrderStatusRequested extends OrderStatusEvent {
   final int orderId;
   final int statusType;
+  final String orderDate;
+  final String orderTime;
 
-  UpdateOrderStatusRequested({required this.orderId, required this.statusType});
+  UpdateOrderStatusRequested({required this.orderId, required this.statusType, required this.orderDate, required this.orderTime});
 }
 
 // --- 2. States ---
@@ -49,7 +51,7 @@ class OrderStatusBloc extends Bloc<OrderStatusEvent, OrderStatusState> {
     try {
       final response = await _service.updateOrderStatus(
         orderId: event.orderId,
-        statusType: event.statusType,
+        statusType: event.statusType, orderDate: event.orderDate, orderTime: event.orderTime,
       );
       emit(OrderStatusSuccess(response));
     } catch (e) {

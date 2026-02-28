@@ -8,6 +8,8 @@ import '../../../../view_model/LabVM/AllLab/lab_bloc.dart';
 import '../../../../view_model/LabVM/AllLab/lab_event.dart';
 import '../../../../view_model/LabVM/AllLab/lab_state.dart';
 import '../../../Dashboard/widgets/slide_page_route.dart';
+import '../../CartScreen/store/cart_notifier.dart';
+import '../../CartScreen/widgets/go_to_cart_bar.dart';
 import '../widgets/lab_shimmer_loading.dart';
 import 'company_medicine_view.dart';
 
@@ -90,6 +92,7 @@ class _AllLabMedicinePageState extends State<AllLabMedicinePage> {
 
   @override
   Widget build(BuildContext context) {
+    final cartCount = context.watch<CartProvider>().totalCount;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -194,6 +197,9 @@ class _AllLabMedicinePageState extends State<AllLabMedicinePage> {
           return const Center(child: CircularProgressIndicator());
         },
       ),
+      bottomNavigationBar: cartCount > 0
+          ? GoToCartBar(cartCount: cartCount)
+          : null,
     );
   }
 }

@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shimmer/shimmer.dart'; // Still useful for the background if needed
-import 'dart:math';
+import 'package:shimmer/shimmer.dart';
 
-// Assuming these paths are correct
 import '../../../../config/color/colors.dart';
 import '../../../../data/repositories/medicine_service/category_medicine_service.dart';
 import '../../../../models/BrandM/brand_model.dart';
-// ⚠️ You must create the BrandStoryPage file at this path:
 import '../../../Dashboard/widgets/slide_page_route.dart';
-import '../pages/brand_story_page.dart';
 import '../pages/category_medicine_view.dart';
 
 const String _imageHostUrl = 'https://www.online-tech.in/';
@@ -20,8 +16,6 @@ class BrandCard extends StatelessWidget {
   const BrandCard({super.key, required this.brand});
 
   String get logoImageUrl => '$_imageHostUrl${brand.image.replaceAll('\\', '/')}';
-
-  String get storyImageUrl => logoImageUrl;
 
   Color _getPlaceholderColor(int id) {
     final colors = [
@@ -37,34 +31,27 @@ class BrandCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        // 💡 Implement Navigation to BrandStoryPage
-        // Navigator.of(context).push(
-        //   MaterialPageRoute(
-        //     builder: (context) => BrandStoryPage(
-        //       brandName: brand.brandName,
-        //       // Pass the BrandModel to the story page if needed, but using required fields
-        //       imageUrl: storyImageUrl,
-        //     ),
-        //   ),
-        // );
         Navigator.of(context).push(
           SlidePageRoute(
-            page: CategoryMedicineView(id: brand.id, title: brand.brandName, fetchType: MedicineFetchType.brand,),
+            page: CategoryMedicineView(
+              id: brand.id,
+              title: brand.brandName,
+              fetchType: MedicineFetchType.brand,
+            ),
           ),
         );
       },
       child: Padding(
-        // Padding for separation in the horizontal list
         padding: const EdgeInsets.only(right: 12.0),
         child: Column(
+          mainAxisSize: MainAxisSize.min, // 💡 Use minimum space
           children: [
-            // Brand Image Container (Circular Story UI)
+            // Brand Image Container
             Container(
               width: 70,
               height: 70,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                // Optional: Add a subtle border like a 'story' ring
                 border: Border.all(color: Colors.grey.shade300, width: 1),
                 color: AppColors.white,
               ),
@@ -72,27 +59,18 @@ class BrandCard extends StatelessWidget {
                 child: Image.network(
                   logoImageUrl,
                   fit: BoxFit.contain,
-
-                  // 💡 Loading Builder (Placeholder logic)
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
-
-                    // Show Shimmer while loading image
                     return Shimmer.fromColors(
                       baseColor: Colors.grey[300]!,
                       highlightColor: Colors.grey[100]!,
-                      child: CircleAvatar(
-                        backgroundColor: placeholderColor.withOpacity(0.2),
-                      ),
+                      child: Container(color: Colors.white),
                     );
                   },
-
-                  // 💡 Error Builder (Placeholder logic)
                   errorBuilder: (context, error, stackTrace) {
                     return CircleAvatar(
                       backgroundColor: placeholderColor.withOpacity(0.2),
                       child: Text(
-                        // Get the first letter of the brand name
                         brand.brandName.isNotEmpty ? brand.brandName.substring(0, 1) : '?',
                         style: GoogleFonts.poppins(
                           fontSize: 24,
@@ -105,20 +83,23 @@ class BrandCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            // Brand Name Text
-            SizedBox(
-              width: 70,
-              child: Text(
-                brand.brandName,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: AppColors.textColor,
-                  fontWeight: FontWeight.w500,
+            const SizedBox(height: 4), // 💡 Reduced from 8 to 4 to save space
+
+            // 💡 Wrapped in Expanded to prevent overflow
+            Expanded(
+              child: SizedBox(
+                width: 70,
+                child: Text(
+                  brand.brandName,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11, // 💡 Slightly reduced font size for better fit
+                    color: AppColors.textColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

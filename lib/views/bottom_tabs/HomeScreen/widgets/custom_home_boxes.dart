@@ -1,92 +1,55 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../view_model/BannerVM/get_all_banner_view_model.dart';
 
 class CustomHomeBoxes extends StatelessWidget {
   const CustomHomeBoxes({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> boxData = [
-      {
-        'label': 'Test',
-        'image': 'assets/images/blood_test.png',
-        'color': Colors.blue.shade50,
-      },
-      {
-        'label': 'Report',
-        'image': 'assets/images/img.png',
-        'color': Colors.green.shade50,
-      },
-      {
-        'label': 'Book',
-        'image': 'assets/images/img.png',
-        'color': Colors.orange.shade50,
-      },
-    ];
+    const String imageHostUrl = 'https://www.online-tech.in/BannerImage/';
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isTablet = screenWidth >= 600;
+    final double imageHeight = isTablet ? 220 : 140;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(boxData.length, (index) {
-        final box = boxData[index];
-        return Expanded(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 6),
-            height: 120,
-            decoration: BoxDecoration(
-              color: box['color'],
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.shade300,
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Image.asset(
-                      box['image'],
-                      height: 70,
-                      width: 70,
-                    ),
-                    Positioned(
-                      top: -8,
-                      right: -8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.redAccent,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Upto 60% off',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+    return BlocBuilder<GetAllBannerBloc, GetAllBannerState>(
+      builder: (context, state) {
+        if (state is GetAllBannerLoaded) {
+          // Filter for Category 1
+          final category1Banners = state.banners
+              .where((b) => b.bannerCategoryId == 1 && b.image != null)
+              .toList();
+
+          if (category1Banners.isEmpty) return const SizedBox.shrink();
+
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: category1Banners.map((banner) {
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: isTablet ? 12 : 6),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        Uri.encodeFull('$imageHostUrl${banner.image}'),
+                        height: imageHeight,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.broken_image),
                       ),
                     ),
-                  ],
-                ),
-                Text(
-                  box['label'],
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
                   ),
-                ),
-              ],
+                );
+              }).toList(),
             ),
-          ),
-        );
-      }),
+          );
+        }
+        // Show nothing or a shimmer while loading
+        return const SizedBox.shrink();
+      },
     );
   }
 }

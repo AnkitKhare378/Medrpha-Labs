@@ -14,6 +14,8 @@ class OrderService {
     required double subTotal,
     required double discountAmount,
     required double finalAmount,
+    required String orderTime,
+    required String orderDate
   }) async {
     final body = {
       "userId": userId,
@@ -26,6 +28,8 @@ class OrderService {
       "subTotal": subTotal,
       "discountAmount": discountAmount,
       "finalAmount": finalAmount,
+      "orderTime": orderTime,
+      "orderDate": orderDate,
     };
 
     try {

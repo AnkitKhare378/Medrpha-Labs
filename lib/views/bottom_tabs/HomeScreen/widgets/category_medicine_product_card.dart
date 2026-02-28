@@ -57,8 +57,8 @@ class _CategoryMedicineProductCardState extends State<CategoryMedicineProductCar
 
   // NOTE: Your model lacks price fields. Using placeholders or adding them if they exist in DB.
   // If your model is updated later, replace '0.00' with actual fields.
-  String get _salePrice => "0.00";
-  String get _mrpPrice => "0.00";
+  double get _salePrice => 0.00;
+  double get _mrpPrice => 0.00;
 
   String get _imageUrl => 'https://cdn-icons-png.flaticon.com/128/883/883407.png';
 
@@ -178,9 +178,10 @@ class _CategoryMedicineProductCardState extends State<CategoryMedicineProductCar
             userId: _userId,
             productId: productId,
             name: _uniqueKey,
+            labId: 1,
             categoryId: _medicineCategoryId,
-            originalPrice: '₹$_mrpPrice',
-            discountedPrice: '₹$_salePrice',
+            originalPrice: _mrpPrice,
+            discountedPrice: _salePrice,
           );
           if(widget.medicine.isPrescription == true) {
             showAppSnackBar(context, "Prescription required for this medicine");
@@ -201,13 +202,13 @@ class _CategoryMedicineProductCardState extends State<CategoryMedicineProductCar
           IconButton(
             icon: const Icon(Icons.remove, size: 16),
             padding: EdgeInsets.zero,
-            onPressed: () => cart.remove(userId: _userId, productId: productId, name: _uniqueKey, categoryId: _medicineCategoryId),
+            onPressed: () => cart.remove(userId: _userId,labId: 1, productId: productId, name: _uniqueKey, categoryId: _medicineCategoryId),
           ),
           Text('$qty', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold)),
           IconButton(
             icon: const Icon(Icons.add, size: 16),
             padding: EdgeInsets.zero,
-            onPressed: () => cart.add(userId: _userId, productId: productId, name: _uniqueKey, categoryId: _medicineCategoryId, originalPrice: '₹$_mrpPrice', discountedPrice: '₹$_salePrice'),
+            onPressed: () => cart.add(userId: _userId, labId: 1, productId: productId, name: _uniqueKey, categoryId: _medicineCategoryId, originalPrice: _mrpPrice, discountedPrice: _salePrice),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ class PackageModel {
   final double packagePrice;
   final double discountPrice;
   final List<TestDetailModel> details;
+  final int labId;
 
   PackageModel({
     required this.packageId,
@@ -11,6 +12,7 @@ class PackageModel {
     required this.packagePrice,
     required this.discountPrice,
     required this.details,
+    required this.labId,
   });
 
   factory PackageModel.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,7 @@ class PackageModel {
       packagePrice: json['packagePrice'] ?? 0,
       discountPrice: json['discountPrice'] ?? 0,
       details: details,
+      labId: json['labId'] ?? 0,
     );
   }
 }

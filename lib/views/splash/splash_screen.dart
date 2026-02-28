@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // Delay navigation after 5 seconds
     Future.delayed(const Duration(seconds: 5), () {
-      Navigator.pushReplacementNamed(context, RoutesName.loginScreen);
+      Navigator.pushReplacementNamed(context, RoutesName.onBoardingScreen);
     });
   }
 

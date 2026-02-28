@@ -68,33 +68,37 @@ class PackageDetailModel extends Equatable {
   });
 
   factory PackageDetailModel.fromJson(Map<String, dynamic> json) {
-    // 1. Decode the stringified JSON array
-    final List<dynamic> testsJson =
-    jsonDecode(json['testPackageDetailsJson'] as String);
+    // 1. Safe check for the stringified JSON array
+    final String? testJsonString = json['testPackageDetailsJson'] as String?;
 
-    // 2. Map the dynamic list to a list of PackageTestDetail objects
-    final List<PackageTestDetail> packageTests = testsJson
-        .map((testJson) => PackageTestDetail.fromJson(testJson as Map<String, dynamic>))
-        .toList();
+    List<PackageTestDetail> packageTests = [];
+
+    if (testJsonString != null && testJsonString.isNotEmpty) {
+      final List<dynamic> testsJson = jsonDecode(testJsonString);
+      packageTests = testsJson
+          .map((testJson) => PackageTestDetail.fromJson(testJson as Map<String, dynamic>))
+          .toList();
+    }
 
     return PackageDetailModel(
-      packageId: json['packageId'] as int,
-      packageName: json['packageName'] as String,
-      description: json['description'] as String,
-      packagePrice: (json['packagePrice'] as num).toDouble(),
-      totalPrice: (json['totalPrice'] as num).toDouble(),
-      discountPrice: (json['discountPrice'] as num).toDouble(),
+      packageId: json['packageId'] as int? ?? 0,
+      packageName: json['packageName']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      packagePrice: (json['packagePrice'] as num? ?? 0).toDouble(),
+      totalPrice: (json['totalPrice'] as num? ?? 0).toDouble(),
+      discountPrice: (json['discountPrice'] as num? ?? 0).toDouble(),
       packageImage: json['packageImage'] as String?,
-      isPopular: json['isPopular'] as bool,
-      isActive: json['isActive'] as bool,
-      isFasting: json['isFasting'] as bool,
-      companyId: json['companyId'] as int,
+      isPopular: json['isPopular'] as bool? ?? false,
+      isActive: json['isActive'] as bool? ?? false,
+      isFasting: json['isFasting'] as bool? ?? false,
+      companyId: json['companyId'] as int? ?? 0,
       companyName: json['companyName'] as String?,
-      labId: json['labId'] as int,
+      labId: json['labId'] as int? ?? 0,
       labName: json['labName'] as String?,
-      packageTests: packageTests,
+      packageTests: packageTests, // This will be empty if JSON was null
     );
   }
+
 
   @override
   List<Object?> get props => [

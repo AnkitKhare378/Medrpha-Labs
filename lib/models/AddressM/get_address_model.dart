@@ -16,6 +16,8 @@ class UserAddress {
   final String? addressTitle;
   final String? faltHousNumber;
   final String street;
+  final String latitude;
+  final String longitude;
   final String locality;
   final String pincode;
 
@@ -29,6 +31,8 @@ class UserAddress {
     required this.street,
     required this.locality,
     required this.pincode,
+    required this.latitude,
+    required this.longitude,
   });
 
   factory UserAddress.fromJson(Map<String, dynamic> json) => UserAddress(
@@ -41,6 +45,8 @@ class UserAddress {
     street: json["street"],
     locality: json["locality"],
     pincode: json["pincode"],
+    latitude: json["latitude"],
+    longitude: json["longitude"]
   );
 
   Map<String, dynamic> toJson() => {
@@ -53,6 +59,8 @@ class UserAddress {
     "street": street,
     "locality": locality,
     "pincode": pincode,
+    "latitude": latitude,
+    "longitude": longitude,
   };
 
   Map<String, String> toDisplayMap() {

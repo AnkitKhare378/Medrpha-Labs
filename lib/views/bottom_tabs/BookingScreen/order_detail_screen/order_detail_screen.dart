@@ -6,8 +6,10 @@ import 'package:medrpha_labs/views/bottom_tabs/BookingScreen/order_detail_screen
 import '../../../../config/color/colors.dart';
 import '../../../../data/repositories/order_service/order__history_service.dart';
 import '../../../../models/OrderM/order_history.dart';
+import '../../../../view_model/CartVM/store_shift_bloc.dart';
 import '../../../../view_model/OrderVM/OrderHistory/order_history_bloc.dart';
 import '../../../../view_model/OrderVM/OrderHistory/order_status_view_model.dart';
+import '../../CartScreen/widgets/slot_card.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final int orderId;
@@ -57,7 +59,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         BlocProvider(
           create: (context) => OrderHistoryBloc(OrderHistoryService())
             ..add(FetchOrderHistoryEvent(
-              userId: _userId ?? 0,
+              userId:  0,
               orderId: widget.orderId,
             )),
         ),
@@ -78,90 +80,154 @@ class OrderDetailView extends StatelessWidget {
   String _formatOrderDate(DateTime date) => DateFormat('MMM dd, yyyy').format(date);
   String _formatCurrency(double amount) => NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(amount);
 
-  final List<String> timeSlots = [
-    "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM",
-    "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM",
-    "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM",
-    "04:00 PM", "04:30 PM", "05:00 PM", "05:30 PM",
-  ];
 
   Future<void> _selectDateTime(BuildContext context) async {
-    // 1. Pick Date
-    final DateTime? pickedDate = await showDatePicker(
+    final historyState = context.read<OrderHistoryBloc>().state;
+    if (historyState is! OrderHistoryLoaded || historyState.orders.isEmpty) return;
+
+    final order = historyState.orders.first;
+    // Use labId or storeId as per your model
+    final int storeId = order.items.isNotEmpty ? order.items.first.labId : 0;
+
+    if (storeId == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Store info missing")));
+      return;
+    }
+
+    String? capturedIsoDate; // Local variable to store date from SlotCard
+    String? finalFormattedTime;
+
+    await showDialog(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2030),
-    );
-
-    if (pickedDate == null || !context.mounted) return;
-
-    // 2. Pick Time Slot (Grid Dialog)
-    final String? selectedSlot = await _showTimeSlotDialog(context);
-
-    if (selectedSlot == null || !context.mounted) return;
-
-    // 3. Combine and Send to Bloc
-    final String formattedDate = "${pickedDate.toIso8601String().split('T')[0]} $selectedSlot";
-
-    context.read<OrderStatusBloc>().add(
-      UpdateOrderStatusRequested(
-        orderId: orderId,
-        statusType: 5,
-        // scheduledAt: formattedDate, // Uncomment if your BLoC event supports this
-      ),
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Order rescheduled for $formattedDate')),
-    );
-  }
-
-  Future<String?> _showTimeSlotDialog(BuildContext context) async {
-    return showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Select Time Slot',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18)),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: GridView.builder(
-              shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 2.2,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
+      builder: (dialogContext) {
+        return BlocProvider.value(
+          value: context.read<StoreShiftBloc>(),
+          child: AlertDialog(
+            backgroundColor: Colors.white,
+            title: Text('Reschedule Order', style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 16)),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SlotCard(
+                storeId: storeId,
+                forOrder: true,
+                onDateSelected: (isoDate) {
+                  capturedIsoDate = isoDate; // Sync selected date
+                },
+                onTimeSelected: (formattedTime) {
+                  finalFormattedTime = formattedTime;
+                },
               ),
-              itemCount: timeSlots.length,
-              itemBuilder: (context, index) {
-                return OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    side: const BorderSide(color: Colors.blueAccent),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () => Navigator.pop(context, timeSlots[index]),
-                  child: Text(
-                      timeSlots[index],
-                      style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.primaryColor)
-                  ),
-                );
-              },
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                onPressed: () {
+                  if (finalFormattedTime != null) {
+                    Navigator.pop(dialogContext, true);
+                  } else {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(content: Text("Please select a time slot")),
+                    );
+                  }
+                },
+                child: Text('Confirm', style: GoogleFonts.poppins(color: Colors.white)),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: GoogleFonts.poppins(color: AppColors.primaryColor),),
-            )
-          ],
         );
       },
+    ).then((confirmed) {
+      if (confirmed == true && finalFormattedTime != null) {
+        // Use picked date from SlotCard, or fallback to current time
+        final String orderDateToSend = capturedIsoDate ?? DateTime.now().toUtc().toIso8601String();
+
+        context.read<OrderStatusBloc>().add(
+          UpdateOrderStatusRequested(
+            orderId: orderId,
+            statusType: 5,
+            orderDate: orderDateToSend, // Dynamic selected date
+            orderTime: finalFormattedTime!, // HH:mm:ss
+          ),
+        );
+      }
+    });
+  }
+
+  // Modified to return a bool so the parent can decide whether to close
+  Future<bool?> _showSlotConfirmationDialog(BuildContext context, String selectedTime) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(
+          'Confirm Time Slot',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Are you sure you want to schedule this order for $selectedTime?',
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Change', style: GoogleFonts.poppins(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Confirm', style: GoogleFonts.poppins(color: Colors.white)),
+          )
+        ],
+      ),
     );
   }
 
+  Future<bool> _showCancelConfirmationDialog(BuildContext context) async {
+    final bool? result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(
+          'Cancel Order',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Are you sure you want to cancel this order? This action cannot be undone.',
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'No, Keep It',
+              style: GoogleFonts.poppins(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent, // Red to indicate cancellation
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              'Yes, Cancel',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+          )
+        ],
+      ),
+    );
+    return result ?? false;
+  }
 
   void _showStatusBottomSheet(BuildContext context) {
     showModalBottomSheet<int>(
@@ -192,33 +258,43 @@ class OrderDetailView extends StatelessWidget {
               title: const Text('Rescheduled'),
               onTap: () => Navigator.pop(context, 5), // Return 5 for Reschedule
             ),
-            ListTile(
-              leading: const Icon(Icons.check_circle, color: Colors.green),
-              title: const Text('Completed'),
-              onTap: () => Navigator.pop(context, 2),
-            ),
+            // ListTile(
+            //   leading: const Icon(Icons.check_circle, color: Colors.green),
+            //   title: const Text('Completed'),
+            //   onTap: () => Navigator.pop(context, 2),
+            // ),
             const SizedBox(height: 8),
           ],
         );
       },
-    ).then((statusType) {
-      if (statusType != null) {
-        if (statusType == 5) {
-          // Trigger the date/time flow if 5 was selected
-          _selectDateTime(context);
-        } else {
-          // Standard update for other statuses
+    ).then((statusType) async {
+      if (statusType == null) return;
+
+      if (statusType == 5) {
+        // Flow for Reschedule
+        _selectDateTime(context);
+      } else if (statusType == 1) {
+        // 🎯 Trigger Confirmation Dialog for Cancel
+        final bool confirmed = await _showCancelConfirmationDialog(context);
+        if (confirmed && context.mounted) {
           context.read<OrderStatusBloc>().add(
             UpdateOrderStatusRequested(
               orderId: orderId,
-              statusType: statusType,
+              statusType: 1, orderDate: '', orderTime: '',
             ),
           );
         }
+      } else {
+        // Standard update for any other statuses
+        context.read<OrderStatusBloc>().add(
+          UpdateOrderStatusRequested(
+            orderId: orderId,
+            statusType: statusType, orderDate: '', orderTime: '',
+          ),
+        );
       }
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -228,9 +304,23 @@ class OrderDetailView extends StatelessWidget {
         backgroundColor: Colors.blueAccent,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_note),
-            onPressed: () => _showStatusBottomSheet(context),
+          // Wrap the button in a BlocBuilder to access the order status
+          BlocBuilder<OrderHistoryBloc, OrderHistoryState>(
+            builder: (context, state) {
+              if (state is OrderHistoryLoaded && state.orders.isNotEmpty) {
+                final order = state.orders.first;
+
+                // Logic: Only show the button if status is NOT 'Completed'
+                if (order.status != 'Completed') {
+                  return IconButton(
+                    icon: const Icon(Icons.edit_note),
+                    onPressed: () => _showStatusBottomSheet(context),
+                  );
+                }
+              }
+              // Return an empty widget (or SizedBox) if loading, error, or Completed
+              return const SizedBox.shrink();
+            },
           ),
         ],
       ),
@@ -259,7 +349,6 @@ class OrderDetailView extends StatelessWidget {
               }
             },
           ),
-
         ],
         child: BlocBuilder<OrderHistoryBloc, OrderHistoryState>(
           builder: (context, state) {
@@ -277,7 +366,7 @@ class OrderDetailView extends StatelessWidget {
                     _buildOrderSummaryCard(order),
                     const SizedBox(height: 20),
                     Text('Items (${order.items.length})',
-                        style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                        style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500)),
                     const SizedBox(height: 10),
                     ...order.items.map((item) => _buildItemRow(item)).toList(),
                     const SizedBox(height: 20),
@@ -301,18 +390,48 @@ class OrderDetailView extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, // Align content to start
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Order ${order.orderNumber}',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-                OrderReportDialog(orderId: orderId),
+                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500)),
+                OrderReportDialog(orderId: order.orderId), // Fixed to use order object
               ],
             ),
             const Divider(),
             _buildDetailRow('Status:', order.status, color: Colors.green),
             _buildDetailRow('Order Date:', _formatOrderDate(order.orderDate)),
+
+            // --- Added Delivery Address Section ---
+            const SizedBox(height: 8),
+            Divider(),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.location_on_outlined, size: 18, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Text(
+                      //   order.addressTitle.trim().isEmpty ? 'Delivery Address' : order.addressTitle,
+                      //   style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                      // ),
+                      Text(
+                        '${order.flatHouseNumber}, ${order.street}, ${order.locality} - ${order.pincode}',
+                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const Divider(),
+            // --------------------------------------
+
             _buildDetailRow('Total Amount:', _formatCurrency(order.finalAmount),
                 color: Colors.blueAccent, isLarge: true),
           ],
@@ -325,7 +444,7 @@ class OrderDetailView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Pricing', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+        Text('Pricing', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500)),
         const SizedBox(height: 8),
         _buildPriceRow('Subtotal (Approx)', _formatCurrency(order.finalAmount)),
         _buildPriceRow('Discount', _formatCurrency(0.0), isDiscount: true),
@@ -370,14 +489,14 @@ class OrderDetailView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.itemName, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                Text(item.itemName, style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 12)),
                 Text('${item.quantity} x ${_formatCurrency(item.unitPrice)}',
-                    style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                    style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54)),
               ],
             ),
           ),
           Text(_formatCurrency(item.quantity * item.unitPrice),
-              style: const TextStyle(fontWeight: FontWeight.bold)),
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -389,7 +508,7 @@ class OrderDetailView extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: GoogleFonts.poppins(fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
+          Text(label, style: GoogleFonts.poppins(fontWeight: isTotal ? FontWeight.w500 : FontWeight.normal)),
           Text(value, style: GoogleFonts.poppins(
               color: isDiscount ? Colors.red : (isTotal ? Colors.blueAccent : Colors.black),
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal

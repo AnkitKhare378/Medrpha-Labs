@@ -22,7 +22,10 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
         paymentMethod: event.paymentMethodId,
         subTotal: event.subTotal,
         discountAmount: event.discountAmount,
-        finalAmount: event.finalAmount, userAddressId: event.userAddressId,
+        finalAmount: event.finalAmount,
+        userAddressId: event.userAddressId,
+        orderTime: event.orderTime,
+        orderDate: event.orderDate
       );
 
       if (response.succeeded) {

@@ -4,7 +4,6 @@ plugins {
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
-
 android {
     namespace = "com.medrpha_labs.app"
     compileSdk = 36

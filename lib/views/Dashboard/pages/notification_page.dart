@@ -7,26 +7,8 @@ class NotificationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notifications = [
-      {
-        "title": "New Message",
-        "subtitle": "You have received a new message from Admin.",
-        "time": "2 min ago",
-        "icon": Icons.message
-      },
-      {
-        "title": "Course Update",
-        "subtitle": "Your Maths class has been rescheduled to 5 PM.",
-        "time": "1 hr ago",
-        "icon": Icons.school
-      },
-      {
-        "title": "Exam Reminder",
-        "subtitle": "SSC CGL Tier 1 test is tomorrow at 10 AM.",
-        "time": "Yesterday",
-        "icon": Icons.alarm
-      },
-    ];
+    // Logic: Change this to an empty list [] to see the "No Data" view
+    final notifications = [];
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -39,7 +21,9 @@ class NotificationPage extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: ListView.separated(
+      body: notifications.isEmpty
+          ? _buildNoDataView()
+          : ListView.separated(
         itemCount: notifications.length,
         separatorBuilder: (_, __) => Divider(
           height: 1,
@@ -53,7 +37,8 @@ class NotificationPage extends StatelessWidget {
             leading: CircleAvatar(
               radius: 22,
               backgroundColor: AppColors.primaryColor.withOpacity(0.1),
-              child: Icon(item["icon"] as IconData, color: AppColors.primaryColor),
+              child: Icon(item["icon"] as IconData,
+                  color: AppColors.primaryColor),
             ),
             title: Text(
               item["title"].toString(),
@@ -82,11 +67,56 @@ class NotificationPage extends StatelessWidget {
                 color: Colors.grey,
               ),
             ),
-            onTap: () {
-              // Handle notification click
-            },
+            onTap: () {},
           );
         },
+      ),
+    );
+  }
+
+  /// Widget to show when the list is empty
+  Widget _buildNoDataView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // You can replace this Icon with an Image.asset('assets/no_notif.png')
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.blueAccent.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.notifications_off_outlined,
+              size: 80,
+              color: Colors.blueAccent,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'No Notifications Yet',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              'We will notify you when something important happens.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+          SizedBox(height: 50,),
+        ],
       ),
     );
   }

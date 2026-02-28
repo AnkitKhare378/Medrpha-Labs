@@ -1,5 +1,3 @@
-// lib/models/update_customer_response_model.dart
-
 class UpdateCustomerResponse {
   final CustomerData? data;
   final String? message;

@@ -12,6 +12,7 @@ import '../../../AppWidgets/app_snackbar.dart';
 import '../../../Dashboard/dashboard_screen.dart';
 import '../../../Dashboard/widgets/slide_page_route.dart';
 import '../../CartScreen/store/cart_notifier.dart';
+import '../all_pages/all_packages_page.dart';
 import 'packages_shimmer_effect.dart';
 
 class PopularTestPackages extends StatelessWidget {
@@ -20,7 +21,7 @@ class PopularTestPackages extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => PackageBloc()..add(FetchPackages()),
+      create: (context) => PackageBloc()..add(FetchPackages(labId: 0)),
       child: const _PopularTestPackagesView(),
     );
   }
@@ -34,13 +35,40 @@ class _PopularTestPackagesView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Popular Blood Test Packages',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Popular Blood Test Packages',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            BlocBuilder<PackageBloc, PackageState>(
+              builder: (context, state) {
+                if (state is PackageLoaded && state.packages.isNotEmpty) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        SlidePageRoute(page: AllPackagesPage(packages: state.packages)),
+                      );
+                    },
+                    child: Text(
+                      "View All",
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.blueAccent,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
         ),
         const SizedBox(height: 15),
 
@@ -74,6 +102,8 @@ class PackageListView extends StatefulWidget {
 
 class _PackageListViewState extends State<PackageListView> {
   int _currentUserId = 0;
+  int displayLimit = 6;
+  late bool hasMore = widget.packages.length > displayLimit;
 
   @override
   void initState() {
@@ -81,7 +111,6 @@ class _PackageListViewState extends State<PackageListView> {
     _loadUserId();
   }
 
-  // Helper function to load User ID only once
   Future<void> _loadUserId() async {
     final prefs = await SharedPreferences.getInstance();
     final id = prefs.getInt('user_id');
@@ -97,15 +126,25 @@ class _PackageListViewState extends State<PackageListView> {
     final cartProvider = context.watch<CartProvider>();
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final double cardWidth = screenWidth * 0.43;
-    final double bookNowHeight = screenHeight * 0.05;
+
+    final bool isTablet = screenWidth >= 600;
+
+    // ✅ MOBILE = OLD UI
+    final double cardWidth =
+    isTablet ? screenWidth * 0.32 : screenWidth * 0.43;
+
+    final double listHeight =
+    isTablet ? screenHeight * 0.30 : screenHeight * 0.24;
+
+    final double bookNowHeight =
+    isTablet ? screenHeight * 0.055 : screenHeight * 0.05;
 
     if (widget.packages.isEmpty) {
       return const Center(child: Text('No packages available right now.'));
     }
 
     return SizedBox(
-      height: screenHeight * 0.24,
+      height: listHeight,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: widget.packages.length,
@@ -114,19 +153,34 @@ class _PackageListViewState extends State<PackageListView> {
           final String testCount = '${package.details.length} Tests';
           final String offerPrice = '₹${package.packagePrice}';
 
+          // ✅ Fonts: OLD for mobile, NEW for tablet
+          final double titleFontSize =
+          isTablet ? 18 : 14;
+
+          final double subTextFontSize =
+          isTablet ? 15 : 12;
+
+          final double priceFontSize =
+          isTablet ? 15 : 12;
+
+          final double buttonFontSize =
+          isTablet ? 16 : 14;
+
           final int currentQty = cartProvider.qty(package.packageName);
           final bool isItemInCart = currentQty > 0;
-          final bool isItemLoading = cartProvider.loadingProductId == package.packageId;
+          final bool isItemLoading =
+              cartProvider.loadingProductId == package.packageId;
 
-          // Determine button display based on cart status
           final String buttonText = isItemInCart ? 'Remove' : 'Add';
-          final Color buttonColor = isItemInCart ? Colors.red.shade600 : Colors.blueAccent;
+          final Color buttonColor =
+          isItemInCart ? Colors.red.shade600 : Colors.blueAccent;
 
-          // Define the action function to handle both Add and Remove
           void handleCartAction() {
             if (_currentUserId == 0) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please log in to manage your cart.')),
+                const SnackBar(
+                  content: Text('Please log in to manage your cart.'),
+                ),
               );
               return;
             }
@@ -136,6 +190,7 @@ class _PackageListViewState extends State<PackageListView> {
             if (isItemInCart) {
               cart.remove(
                 userId: _currentUserId,
+                labId: package.labId,
                 productId: package.packageId,
                 name: package.packageName,
                 categoryId: 3,
@@ -143,21 +198,23 @@ class _PackageListViewState extends State<PackageListView> {
             } else {
               cart.add(
                 userId: _currentUserId,
+                labId: package.labId,
                 productId: package.packageId,
                 name: package.packageName,
                 categoryId: 3,
-                originalPrice: package.packagePrice.toString(), // Assuming mrpPrice is available
-                discountedPrice: package.packagePrice.toString(), // Using packagePrice as discounted
+                originalPrice: package.packagePrice,
+                discountedPrice: package.packagePrice,
               );
             }
           }
 
-
           return InkWell(
-            onTap: (){
+            onTap: () {
               Navigator.of(context).push(
                 SlidePageRoute(
-                  page: PackageDetailPage(packageId: package.packageId),
+                  page: PackageDetailPage(
+                    packageId: package.packageId,
+                  ),
                 ),
               );
             },
@@ -166,12 +223,12 @@ class _PackageListViewState extends State<PackageListView> {
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
+                borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
                 border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.grey.shade200,
-                    blurRadius: 6,
+                    blurRadius: isTablet ? 8 : 6,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -179,7 +236,7 @@ class _PackageListViewState extends State<PackageListView> {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(10),
+                    padding: EdgeInsets.all(isTablet ? 14 : 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -187,7 +244,7 @@ class _PackageListViewState extends State<PackageListView> {
                           package.packageName,
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                            fontSize: titleFontSize,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -196,15 +253,15 @@ class _PackageListViewState extends State<PackageListView> {
                         Text(
                           testCount,
                           style: GoogleFonts.poppins(
-                            fontSize: 12,
+                            fontSize: subTextFontSize,
                             color: Colors.grey.shade600,
                           ),
                         ),
                         const SizedBox(height: 10),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isTablet ? 10 : 8,
+                            vertical: isTablet ? 6 : 4,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.green.shade50,
@@ -213,7 +270,7 @@ class _PackageListViewState extends State<PackageListView> {
                           child: Text(
                             'Exclusive offer $offerPrice',
                             style: GoogleFonts.poppins(
-                              fontSize: 12,
+                              fontSize: priceFontSize,
                               color: Colors.green.shade800,
                               fontWeight: FontWeight.w500,
                             ),
@@ -223,64 +280,54 @@ class _PackageListViewState extends State<PackageListView> {
                     ),
                   ),
                   const Spacer(),
-            
-                  if(_currentUserId != 0) ...[
-                    Container(
-                      height: bookNowHeight,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: buttonColor, // Dynamic color
-                        borderRadius: const BorderRadius.vertical(
-                          bottom: Radius.circular(12),
-                        ),
+
+                  Container(
+                    height: bookNowHeight,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: buttonColor,
+                      borderRadius: BorderRadius.vertical(
+                        bottom: Radius.circular(isTablet ? 16 : 12),
                       ),
-                      child: TextButton(
-                        onPressed: isItemLoading ? null : handleCartAction,
-                        child: isItemLoading
-                            ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+                    ),
+                    child: TextButton(
+                      onPressed: isItemLoading
+                          ? null
+                          : (_currentUserId != 0
+                          ? handleCartAction
+                          : () {
+                        Navigator.of(context).push(
+                          SlidePageRoute(
+                            page: DashboardScreen(initialIndex: 4),
                           ),
-                        )
-                            : Text(
-                          buttonText, // Dynamic text
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        );
+                        context
+                            .read<DashboardBloc>()
+                            .add(DashboardTabChanged(4));
+                        showAppSnackBar(
+                          context,
+                          "You firstly need to Login to add package in cart",
+                        );
+                      }),
+                      child: isItemLoading
+                          ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                          : Text(
+                        buttonText,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: buttonFontSize,
                         ),
                       ),
                     ),
-                  ],
-                  if(_currentUserId == 0) ...[
-                    Container(
-                      height: bookNowHeight,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: buttonColor, // Dynamic color
-                        borderRadius: const BorderRadius.vertical(
-                          bottom: Radius.circular(12),
-                        ),
-                      ),
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.of(context).push(SlidePageRoute(page: DashboardScreen(initialIndex: 4),));
-                          context.read<DashboardBloc>().add( DashboardTabChanged(4));
-                          showAppSnackBar(context, "You firstly need to Login to add package in cart");
-                        },
-                        child: Text(
-                          "Add", // Dynamic text
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ],
               ),
             ),
@@ -289,4 +336,5 @@ class _PackageListViewState extends State<PackageListView> {
       ),
     );
   }
+
 }

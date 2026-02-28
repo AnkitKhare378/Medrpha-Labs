@@ -44,9 +44,7 @@ class _UpdateMemberPageState extends State<UpdateMemberPage> {
   late final TextEditingController addressController;
   final TextEditingController ageController = TextEditingController();
 
-  // State Variables
   RelationModel? selectedRelation;
-  // ✅ NEW: State variable for Blood Group
   GetBloodGroupModel? selectedBloodGroup;
   String selectedGender = '';
   File? _selectedImage;
@@ -183,7 +181,7 @@ class _UpdateMemberPageState extends State<UpdateMemberPage> {
         // ✅ Pass the name from the selectedBloodGroup model
         bloodGroup: selectedBloodGroup!.name,
         relationId: selectedRelation!.id.toString(),
-        dateOfBirth: dobController.text, // Ensure format is 'dd/MM/yyyy' or API compliant
+        dateOfBirth: selectedDate!.toIso8601String(), // Ensure format is 'dd/MM/yyyy' or API compliant
         heightCM: heightController.text,
         weightKG: weightController.text,
         address: addressController.text,

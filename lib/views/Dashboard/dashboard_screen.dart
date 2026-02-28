@@ -7,6 +7,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:medrpha_labs/views/bottom_tabs/CartScreen/my_cart_page.dart';
 import 'package:medrpha_labs/views/bottom_tabs/CategoryScreen/category_page.dart';
 import 'package:medrpha_labs/views/bottom_tabs/TestScreen/lab_test_screen2.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/navigation_service.dart';
 import '../../pages/dashboard/bloc/dashboard_bloc.dart';
 import '../../pages/dashboard/bloc/dashboard_event.dart';
@@ -14,6 +15,9 @@ import '../../pages/dashboard/bloc/dashboard_state.dart';
 import 'package:medrpha_labs/views/Dashboard/widgets/animated_tab_icon.dart';
 import 'package:medrpha_labs/views/bottom_tabs/HomeScreen/home_screen.dart';
 import 'package:medrpha_labs/views/bottom_tabs/ProfileScreen/profile_screen.dart';
+
+import '../../view_model/CartVM/get_cart_view_model.dart';
+import '../../view_model/TestVM/AllTestSearch/all_test_serach_model.dart';
 
 class DashboardScreen extends StatefulWidget {
   final int initialIndex;
@@ -27,8 +31,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   // Used only for initial notification routing; UI itself follows bloc state.
   late int _selectedIndex;
-
-
   final int _labVersion = 0;
   final Key _homeKey = UniqueKey();
 
@@ -36,6 +38,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchUserSpecificCart();
+    });
 
     final notificationService = NotificationService();
 
@@ -70,28 +76,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  // Future<void> _openLabsDialog(BuildContext context) async {
-  //   final labs = [
-  //     {"name": "Medrpha Labs - New", "location": "123 Main Street"},
-  //     {"name": "Medrpha Labs - North", "location": "45 Elm Avenue"},
-  //     {"name": "Medrpha Labs - West", "location": "78 Pine Road"},
-  //   ];
-  //
-  //   final selectedLab = await showDialog(
-  //     context: context,
-  //     builder: (_) => LabsListDialog(labs: labs),
-  //   );
-  //
-  //   if (selectedLab != null) {
-  //     // Force-remount HomeScreen so its AppBar re-runs initState and reloads prefs
-  //     setState(() {
-  //       _labVersion++;
-  //       _homeKey = ValueKey(_labVersion);
-  //     });
-  //   }
-  // }
+  void _fetchUserSpecificCart() async {
+    // 1. Initialize SharedPreferences
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  // Build current tab on demand (no cached const list)
+    // 2. Fetch the integer user_id
+    final id = prefs.getInt('user_id');
+
+    // 3. Check if the ID exists and the widget is still in the tree
+    if (id != null && mounted) {
+      // 4. Dispatch the event to your BLoC
+      // (Note: No need to parse if 'id' is already an int)
+      context.read<GetCartBloc>().add(FetchCart(id));
+    } else {
+      debugPrint("No User ID found in SharedPreferences");
+    }
+  }
+
+
   Widget _buildCurrentTab(int index) {
     switch (index) {
       case 0:
@@ -150,6 +152,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 GoogleFonts.poppins(fontWeight: FontWeight.w400),
                 onTap: (index) {
                   context.read<DashboardBloc>().add(DashboardTabChanged(index));
+                  context.read<TestSearchBloc>().add(ClearSearch());
                 },
                 items: [
                   BottomNavigationBarItem(

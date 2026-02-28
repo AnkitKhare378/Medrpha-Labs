@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../view_model/WalletVM/updateWallet/update_wallet_bloc.dart';
 import '../../../../view_model/WalletVM/updateWallet/update_wallet_event.dart';
 import '../../../../view_model/WalletVM/updateWallet/update_wallet_state.dart';
@@ -17,22 +16,53 @@ class AddCashSection extends StatefulWidget {
 }
 
 class _AddCashSectionState extends State<AddCashSection> {
+  // Define the minimum limit constant here as well for consistency
+  final double _minWalletLimit = 500.0;
+
   void _onChipTap(String value) {
-    // 1. Extract the number from the string (e.g., '+400' -> 400)
     final amountString = value.substring(1);
     final amountToAdd = double.tryParse(amountString) ?? 0.0;
 
-    // 2. Get the current amount in the input field
     final currentText = widget.amountController.text;
     final currentAmount = double.tryParse(currentText) ?? 0.0;
 
-    // 3. Calculate the new total amount
     final newAmount = currentAmount + amountToAdd;
 
-    // 4. Update the controller's text
-    // We display it without decimal points if it's a whole number
     widget.amountController.text = newAmount.toStringAsFixed(newAmount.truncateToDouble() == newAmount ? 0 : 2);
   }
+
+  /// Displays the formal alert dialog if amount is less than 500
+  void _showAlert(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: Text(
+            "Minimum Amount Required",
+            style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          content: Text(
+            "Please enter an amount of ₹${_minWalletLimit.toInt()} or more to proceed.",
+            style: GoogleFonts.poppins(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "OK",
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blueAccent,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -48,67 +78,70 @@ class _AddCashSectionState extends State<AddCashSection> {
           ),
         ],
       ),
-      // Use BlocBuilder on the dedicated UpdateWalletViewModel
       child: BlocBuilder<UpdateWalletViewModel, UpdateWalletState>(
         builder: (context, state) {
-          final isLoding = state is UpdateWalletLoading;
+          final isLoading = state is UpdateWalletLoading;
           return Column(
             children: [
               TextFormField(
-                controller: widget.amountController, // Assign the controller
+                controller: widget.amountController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: '₹',
-                  border: OutlineInputBorder(),
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                decoration: InputDecoration(
+                  labelText: 'Enter Amount',
+                  labelStyle: GoogleFonts.poppins(),
+                  prefixText: '₹ ',
+                  border: const OutlineInputBorder(),
                 ),
-                enabled: !isLoding, // Disable input while loading
+                enabled: !isLoading,
               ),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 6,
-                children: ['+400', '+500', '+1000', '+2000']
-                    .map((v) => Chip(
-                  label: GestureDetector(
-                    onTap: isLoding ? null : () => _onChipTap(v),
-                    child: Text(v,
-                        style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w500,
-                            color: Colors.blueAccent,
-                            fontSize: 12)),
-                  ),
+                children: ['+500', '+1000','+1500', '+2000']
+                    .map((v) => ActionChip(
+                  label: Text(v,
+                      style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w500,
+                          color: Colors.blueAccent,
+                          fontSize: 12)),
                   backgroundColor: Colors.white,
+                  onPressed: isLoading ? null : () => _onChipTap(v),
                 ))
                     .toList(),
               ),
               const SizedBox(height: 20),
               AddMoreTestButton(
-                onPressed: isLoding
-                    ? () {} // Do nothing when loading
+                onPressed: isLoading
+                    ? () {}
                     : () {
                   final amountText = widget.amountController.text.trim();
                   final amount = double.tryParse(amountText);
 
-                  if (amount != null && amount > 0) {
-                    // Dispatch the event using the renamed BLoC
+                  if (amount == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a valid amount.')),
+                    );
+                  }
+                  // --- Added the 500 limit alert logic here ---
+                  else if (amount < _minWalletLimit) {
+                    _showAlert(context);
+                  }
+                  // --- End of alert logic ---
+                  else {
                     context.read<UpdateWalletViewModel>().add(
                       AddBalanceToWallet(
                         userId: widget.userId,
                         amountToAdd: amount,
                       ),
                     );
-                    widget.amountController.clear();
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Please enter a valid amount.')),
-                    );
+                    // We usually clear this in the BlocListener on success,
+                    // but keeping your clear logic here if preferred.
                   }
                 },
-                title: isLoding ? "ADDING..." : "ADD TO WALLET", // Update title
-                backgroundColor:
-                isLoding ? Colors.blue.shade200 : Colors.blueAccent,
-                textColor: isLoding ? Colors.white70 : Colors.white,
-                // If AddMoreTestButton has an isLoding parameter, you should pass it here
+                title: isLoading ? "ADDING..." : "ADD TO WALLET",
+                backgroundColor: isLoading ? Colors.blue.shade200 : Colors.blueAccent,
+                textColor: isLoading ? Colors.white70 : Colors.white,
               ),
             ],
           );

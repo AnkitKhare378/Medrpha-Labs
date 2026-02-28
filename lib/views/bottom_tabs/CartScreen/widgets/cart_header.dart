@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:medrpha_labs/views/bottom_tabs/ProfileScreen/pages/save_for_later_page.dart';
 
 import '../../../../config/color/colors.dart';
 
@@ -39,9 +40,13 @@ class CartHeader extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               ),
-              const Icon(Iconsax.search_normal, color: Colors.white, size: 20),
-              const SizedBox(width: 16),
-              const Icon(Iconsax.bookmark, color: Colors.white, size: 20),
+              // const Icon(Iconsax.search_normal, color: Colors.white, size: 20),
+              // const SizedBox(width: 16),
+              GestureDetector(
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => SaveForLaterPage()));
+                  },
+                  child: const Icon(Iconsax.bookmark, color: Colors.white, size: 20)),
             ],
           ),
         ),

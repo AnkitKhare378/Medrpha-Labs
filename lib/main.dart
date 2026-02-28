@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:medrpha_labs/data/repositories/all_banner_service/get_all_banner_service.dart';
 import 'package:medrpha_labs/data/repositories/blood_service/get_blood_service.dart';
+import 'package:medrpha_labs/data/repositories/company_service/get_all_company_service.dart';
 import 'package:medrpha_labs/data/repositories/faq_service/get_frequently_service.dart';
 import 'package:medrpha_labs/data/repositories/medicine_service/category_medicine_service.dart';
 import 'package:medrpha_labs/data/repositories/medicine_service/medicine_by_Id_service.dart';
@@ -19,6 +20,8 @@ import 'package:medrpha_labs/models/MedicineM/get_medicine_by_company_service.da
 import 'package:medrpha_labs/view_model/AddressVM/GetUserAddress/get_address_view_model.dart';
 import 'package:medrpha_labs/view_model/BannerVM/get_all_banner_view_model.dart';
 import 'package:medrpha_labs/view_model/BloodVM/get_blood_view_model.dart';
+import 'package:medrpha_labs/view_model/CartVM/store_shift_bloc.dart';
+import 'package:medrpha_labs/view_model/CompanyVM/company_bloc.dart';
 import 'package:medrpha_labs/view_model/FamilyMemberVM/get_family_members_view_model.dart';
 import 'package:medrpha_labs/view_model/FamilyMemberVM/relation_cubit.dart';
 import 'package:medrpha_labs/view_model/FaqVM/get_frequently_view_model.dart';
@@ -32,10 +35,13 @@ import 'package:medrpha_labs/view_model/OrderVM/OrderHistory/order_status_view_m
 import 'package:medrpha_labs/view_model/PaymentVM/payment_cubit.dart';
 import 'package:medrpha_labs/view_model/RatingVM/insert_rating_view_model.dart';
 import 'package:medrpha_labs/view_model/SynonymsVM/test_synonym_view_model.dart';
+import 'package:medrpha_labs/views/bottom_tabs/HomeScreen/widgets/specialized_banner.dart';
+import 'package:medrpha_labs/views/bottom_tabs/HomeScreen/widgets/trending_banner.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'data/repositories/address_service/address_delete_service.dart';
 import 'data/repositories/cart_service/get_cart_service.dart';
+import 'data/repositories/cart_service/store_shift_service.dart';
 import 'data/repositories/customer_service/customer_service.dart';
 import 'data/repositories/customer_service/edit_profile_service.dart';
 import 'data/repositories/family_member_service/family_member_delete_service.dart';
@@ -108,6 +114,8 @@ import 'view_model/provider/save_for_later_provider.dart';
 import 'views/bottom_tabs/CartScreen/store/cart_notifier.dart';
 import 'data/repositories/category_repository.dart';
 import 'core/network/custom_http_overrides.dart';
+import 'views/bottom_tabs/HomeScreen/widgets/adv_banner.dart';
+import 'views/bottom_tabs/HomeScreen/widgets/custom_home_boxes.dart';
 
 const String _kFirstTimeKey = 'is_first_time';
 
@@ -159,6 +167,10 @@ Future<void> main() async {
         // ⭐️ FIX: Register LabService here so it's available for LabBloc
         RepositoryProvider<LabService>(
           create: (_) => LabService(),
+        ),
+
+        RepositoryProvider<CompanyService>(
+          create: (_) => CompanyService(),
         ),
 
         // ✨ NEW: Register CustomerService Repository
@@ -273,6 +285,9 @@ Future<void> main() async {
         RepositoryProvider<CategoryMedicineService>(
           create: (_) => CategoryMedicineService(),
         ),
+        RepositoryProvider<StoreShiftService>(
+          create: (_) => StoreShiftService(),
+        ),
       ],
       child: MultiProvider(
         providers: [
@@ -367,6 +382,12 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
+        BlocProvider<CompanyBloc>(
+          create: (context) => CompanyBloc(
+            context.read<CompanyService>(),
+          ),
+        ),
+
         BlocProvider<SymptomBloc>(
           create: (context) => SymptomBloc(
             context.read<SymptomService>(), // Inject the SymptomService
@@ -435,7 +456,7 @@ class MyApp extends StatelessWidget {
 
         BlocProvider<PackageBloc>(
           create: (context) => PackageBloc()
-            ..add(FetchPackages()), // Fetch data immediately
+            ..add(FetchPackages(labId: 0)), // Fetch data immediately
         ),
 
         BlocProvider<CreateOrderBloc>(
@@ -492,9 +513,15 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        BlocProvider<GetAllBannerBloc>(
-          create: (context) => GetAllBannerBloc(
-            context.read<GetAllBannerService>(),
+        BlocProvider(
+          create: (context) => GetAllBannerBloc(GetAllBannerService())..add(const FetchBanners()),
+          child: Column(
+            children: [
+              AdvBanner(), // Uses Category 2
+              CustomHomeBoxes(), // Now uses Category 1
+              SpecializedBanner(),
+              TrendingBanner()
+            ],
           ),
         ),
 
@@ -543,6 +570,11 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
+        BlocProvider<StoreShiftBloc>(
+          create: (context) => StoreShiftBloc(
+            context.read<StoreShiftService>(),
+          ),
+        ),
 
       ],
       child: MaterialApp(

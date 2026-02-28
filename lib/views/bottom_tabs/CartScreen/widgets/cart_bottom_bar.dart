@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:medrpha_labs/config/color/colors.dart';
+import 'package:medrpha_labs/views/bottom_tabs/ProfileScreen/edit_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../models/PaymentMethodM/payment_method_model.dart';
 import '../../../../pages/dashboard/bloc/dashboard_bloc.dart';
@@ -11,6 +12,7 @@ import '../../../../view_model/CustomerVM/customer_event.dart';
 import '../../../../view_model/CustomerVM/customer_state.dart';
 import '../../../../view_model/PaymentVM/payment_cubit.dart';
 import '../../../../view_model/PaymentVM/payment_state.dart';
+import '../../../../view_model/WalletVM/wallet_event.dart';
 import '../../../AppWidgets/app_snackbar.dart';
 import '../../../Dashboard/widgets/slide_page_route.dart';
 import '../../HomeScreen/pages/order_review_screen.dart';
@@ -27,6 +29,10 @@ class CartBottomBar extends StatefulWidget {
   final int selectedAddressTypeId;
   final VoidCallback? onChangeAddress;
   final String deliveryAddress;
+  final bool isSlotEmpty;
+  final bool isOutOfRange;
+  final String slotTime;
+  final String slotDate;
 
   const CartBottomBar({
     super.key,
@@ -38,7 +44,11 @@ class CartBottomBar extends StatefulWidget {
     required this.selectedAddressTypeId,
     required this.totalAmount,
     this.onChangeAddress,
+    required this.isSlotEmpty,
     required this.deliveryAddress,
+    required this.isOutOfRange,
+    required this.slotTime,
+    required this.slotDate
   });
 
   @override
@@ -53,26 +63,26 @@ class _CartBottomBarState extends State<CartBottomBar> {
   void initState() {
     super.initState();
     _loadUserIdAndDispatchCustomerEvent();
+    print("is out of range: ${widget.isOutOfRange}" );
   }
 
+  // Update your existing method
   Future<void> _loadUserIdAndDispatchCustomerEvent() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt('user_id');
-
-      // Debug print to verify ID is coming from storage
-      print("Fetched User ID from Prefs: $userId");
 
       if (mounted) {
         setState(() {
           _customerId = userId ?? 0;
         });
 
-        // Only trigger the Bloc event if we have a valid ID
         if (_customerId != 0) {
+          // 1. Fetch Customer Data
           context.read<CustomerBloc>().add(FetchCustomerEvent(_customerId!));
-        } else {
-          print("User ID is 0 or null, skipping customer fetch.");
+
+          // 2. ADD THIS LINE: Fetch Wallet Data specifically for the cart
+          context.read<WalletBloc>().add(const FetchWalletData());
         }
       }
     } catch (e) {
@@ -280,29 +290,29 @@ class _CartBottomBarState extends State<CartBottomBar> {
                       ],
                       const SizedBox(width: 8),
                       if (widget.userId != 0) ...[
-                        Expanded(
-                          child: Text(
-                            "Delivering to \n${widget.deliveryAddress}",
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: widget.onChangeAddress,
-                          child: Text(
-                            "Change",
-                            style: GoogleFonts.poppins(
-                              color: Colors.blueAccent,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                        // Expanded(
+                        //   child: Text(
+                        //     "Delivering to \n${widget.deliveryAddress}",
+                        //     maxLines: 2,
+                        //     overflow: TextOverflow.ellipsis,
+                        //     style: GoogleFonts.poppins(
+                        //       fontSize: 12,
+                        //       fontWeight: FontWeight.w500,
+                        //       color: Colors.black87,
+                        //     ),
+                        //   ),
+                        // ),
+                        // TextButton(
+                        //   onPressed: widget.onChangeAddress,
+                        //   child: Text(
+                        //     "Change",
+                        //     style: GoogleFonts.poppins(
+                        //       color: Colors.blueAccent,
+                        //       fontSize: 12,
+                        //       fontWeight: FontWeight.w600,
+                        //     ),
+                        //   ),
+                        // ),
                       ] else ...[
                         TextButton(
                           onPressed: () {
@@ -392,6 +402,8 @@ class _CartBottomBarState extends State<CartBottomBar> {
                               style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w600, color: Colors.black87),
                             ),
                             const SizedBox(width: 12),
+                            // ... inside the ElevatedButton within your build method
+
                             SizedBox(
                               width: 80,
                               child: ElevatedButton(
@@ -403,19 +415,53 @@ class _CartBottomBarState extends State<CartBottomBar> {
                                     return;
                                   }
 
-                                  // 2. Check Profile Name (NOW BLOCKS "N/A")
+                                  // NEW: Check if location is out of range
+                                  if (widget.isOutOfRange) {
+                                    showAppSnackBar(context, "Cannot place order: Some items are not available at your location.");
+                                    return;
+                                  }
+
+                                  // 2. Check Slot Availability
+                                  if (widget.isSlotEmpty == true) {
+                                    showAppSnackBar(context, "Slot is not available for today, please try other date");
+                                    return;
+                                  }
+
+                                  if (widget.slotTime == '') {
+                                    showAppSnackBar(context, "Please select time slot");
+                                    return;
+                                  }
+
+                                  // 3. Check Profile Name
                                   if (isNameMissing) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => EditProfileScreen(name: "", email: "", phone: ""),
+                                      ),
+                                    ).then((_) {
+                                      if (mounted && _customerId != 0) {
+                                        context.read<CustomerBloc>().add(FetchCustomerEvent(_customerId!));
+                                      }
+                                    });
+
                                     showAppSnackBar(context, "Please update your profile name before placing order");
                                     return;
                                   }
 
-                                  // 3. Check Payment Method
+                                  // 4. Check Payment Method
                                   if (_selectedMethod == null) {
                                     showAppSnackBar(context, "Please select a payment method");
                                     return;
                                   }
 
-                                  // 4. Final Success Action
+                                  // 5. Check Address Selection
+                                  if (widget.deliveryAddress == 'Please add address to continue') {
+                                    showAppSnackBar(context, "Please select a address to continue");
+                                    return;
+                                  }
+
+                                  // 6. Final Success Action: Proceed to Review
                                   Navigator.of(context).push(
                                     SlidePageRoute(
                                       page: OrderReviewScreen(
@@ -427,18 +473,27 @@ class _CartBottomBarState extends State<CartBottomBar> {
                                         paymentMethodId: _selectedMethod!.id!,
                                         deliveryAddress: widget.deliveryAddress,
                                         selectedAddressId: widget.selectedAddressId,
+                                        slotTime: widget.slotTime,
+                                        slotDate: widget.slotDate
                                       ),
                                     ),
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primaryColor,
+                                  // Change color to Grey if out of range or slot empty
+                                  backgroundColor: (widget.isOutOfRange)
+                                      ? Colors.grey
+                                      : AppColors.primaryColor,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                   padding: EdgeInsets.zero,
                                 ),
                                 child: Text(
                                   "Place Order",
-                                  style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 8),
+                                  style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 8
+                                  ),
                                 ),
                               ),
                             ),

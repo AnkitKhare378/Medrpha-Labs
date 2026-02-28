@@ -7,9 +7,8 @@ import 'package:medrpha_labs/config/color/colors.dart';
 import 'package:medrpha_labs/models/RatingM/get_rating_model.dart';
 import 'package:medrpha_labs/views/bottom_tabs/HomeScreen/pages/edit_rating_screen.dart';
 import 'package:medrpha_labs/views/Dashboard/widgets/slide_page_route.dart';
-// New Import
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../../view_model/RatingVM/rating_delete_view_model.dart';
-
 import 'star_rating_row.dart';
 
 class RatingItemWidget extends StatelessWidget {
@@ -21,6 +20,11 @@ class RatingItemWidget extends StatelessWidget {
     required this.rating,
     required this.onRatingUpdated,
   });
+
+  Future<int?> _getCurrentUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('user_id');
+  }
 
   // --- DELETE LOGIC ---
   Future<void> _confirmAndDelete(BuildContext context) async {
@@ -66,6 +70,7 @@ class RatingItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(rating.createdBy);
     final date = '${rating.createdDate.day}/${rating.createdDate.month}/${rating.createdDate.year}';
 
     return Padding(
@@ -98,32 +103,45 @@ class RatingItemWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               StarRatingRow(ratingPoint: rating.ratingpoint),
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () async {
-                      // Navigate to edit screen
-                      await Navigator.of(context).push(SlidePageRoute(
-                        page: EditReviewFormScreen(
-                          categoryId: rating.categoryId,
-                          productId: rating.productId,
-                          ratingId: rating.id,
-                          remark: rating.remark,
-                          ratingPoint: rating.ratingpoint.toInt(),
-                        ),
-                      ));
-                      onRatingUpdated();
-                    },
-                    icon: const Icon(Icons.edit_note_rounded),
-                  ),
-                  // The new Delete Button
-                  IconButton(
-                    onPressed: () => _confirmAndDelete(context),
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                  ),
-                ],
-              ),
 
+              // Use FutureBuilder to check ownership
+              FutureBuilder<int?>(
+                future: _getCurrentUserId(),
+                builder: (context, snapshot) {
+                  final currentUserId = snapshot.data;
+                  // Convert String createdBy to int safely
+                  final creatorId = int.tryParse(rating.createdBy) ?? -1;
+
+                  // Only show icons if IDs match
+                  if (currentUserId != null && currentUserId == creatorId) {
+                    return Row(
+                      children: [
+                        IconButton(
+                          onPressed: () async {
+                            await Navigator.of(context).push(SlidePageRoute(
+                              page: EditReviewFormScreen(
+                                categoryId: rating.categoryId,
+                                productId: rating.productId,
+                                ratingId: rating.id,
+                                remark: rating.remark,
+                                ratingPoint: rating.ratingpoint.toInt(),
+                              ),
+                            ));
+                            onRatingUpdated();
+                          },
+                          icon: const Icon(Icons.edit_note_rounded),
+                        ),
+                        IconButton(
+                          onPressed: () => _confirmAndDelete(context),
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                        ),
+                      ],
+                    );
+                  }
+                  // Return empty space if not the owner
+                  return const SizedBox.shrink();
+                },
+              ),
             ],
           ),
           const SizedBox(height: 6),

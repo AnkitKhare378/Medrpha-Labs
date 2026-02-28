@@ -5,9 +5,11 @@ import 'package:medrpha_labs/views/login/widgets/app_number_input.dart';
 import 'package:medrpha_labs/views/login/widgets/terms_privacy_text.dart';
 import 'package:medrpha_labs/config/components/round_button.dart';
 import 'package:medrpha_labs/config/routes/routes_name.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/repositories/login_service.dart';
 import '../../view_model/AccountVM/login_view_model.dart';
+import '../../view_model/CartVM/get_cart_view_model.dart';
 import '../AppWidgets/app_snackbar.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -33,6 +35,23 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     Future.delayed(Duration.zero, () => _autoScroll());
+  }
+
+  void _fetchUserSpecificCart() async {
+    // 1. Initialize SharedPreferences
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // 2. Fetch the integer user_id
+    final id = prefs.getInt('user_id');
+
+    // 3. Check if the ID exists and the widget is still in the tree
+    if (id != null && mounted) {
+      // 4. Dispatch the event to your BLoC
+      // (Note: No need to parse if 'id' is already an int)
+      context.read<GetCartBloc>().add(FetchCart(id));
+    } else {
+      debugPrint("No User ID found in SharedPreferences");
+    }
   }
 
   void _autoScroll() {
@@ -71,6 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
       context,
       RoutesName.dashboardScreen, // Replace with your actual home screen route (e.g., RoutesName.homeScreen)
     );
+    _fetchUserSpecificCart();
   }
   // -----------------------------
 
@@ -95,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       state.loginData.messages?.first ?? "OTP sent successfully!",
                     );
 
-                    Navigator.pushReplacementNamed(
+                    Navigator.pushNamed(
                       context,
                       RoutesName.otpScreen,
                       arguments: _phoneController.text.trim(),

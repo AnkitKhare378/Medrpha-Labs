@@ -2,32 +2,47 @@
 
 import 'dart:convert';
 
+/* ===================== RESPONSE ===================== */
 class GetCartResponse {
   final List<CartData> data;
   final bool succeeded;
   final String? message;
   final int totalCount;
+  final int totalPages;
 
   GetCartResponse({
     required this.data,
     required this.succeeded,
     this.message,
     required this.totalCount,
+    required this.totalPages,
   });
 
   factory GetCartResponse.fromJson(Map<String, dynamic> json) {
     return GetCartResponse(
       data: (json['data'] as List<dynamic>?)
-          ?.map((e) => CartData.fromJson(e as Map<String, dynamic>))
+          ?.map((e) => CartData.fromJson(e))
           .toList() ??
           [],
-      succeeded: json['succeeded'] as bool? ?? false,
-      message: json['message'] as String?,
-      totalCount: json['totalCount'] as int? ?? 0,
+      succeeded: json['succeeded'] ?? false,
+      message: json['message'],
+      totalCount: json['totalCount'] ?? 0,
+      totalPages: json['totalPages'] ?? 0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'data': data.map((e) => e.toJson()).toList(),
+      'succeeded': succeeded,
+      'message': message,
+      'totalCount': totalCount,
+      'totalPages': totalPages,
+    };
   }
 }
 
+/* ===================== CART DATA ===================== */
 class CartData {
   final int cartId;
   final int userId;
@@ -48,29 +63,42 @@ class CartData {
   });
 
   factory CartData.fromJson(Map<String, dynamic> json) {
-    // The itemsJson field is a JSON string, which needs to be parsed first
+    final String itemsJsonString = json['itemsJson'] ?? '[]';
     List<dynamic> itemsList = [];
-    final String itemsJsonString = json['itemsJson'] as String? ?? '[]';
+
     try {
-      itemsList = jsonDecode(itemsJsonString) as List<dynamic>;
+      itemsList = jsonDecode(itemsJsonString);
     } catch (e) {
-      print('Error parsing itemsJson: $e');
+      print('itemsJson parse error: $e');
     }
 
     return CartData(
-      cartId: json['cartId'] as int? ?? 0,
-      userId: json['userId'] as int? ?? 0,
-      userName: json['userName'] as String? ?? '',
+      cartId: json['cartId'] ?? 0,
+      userId: json['userId'] ?? 0,
+      userName: json['userName'] ?? '',
       totalQuantity: (json['totalQuantity'] as num?)?.toDouble() ?? 0.0,
       totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0.0,
-      categoryId: json['categoryId'] as int? ?? 0,
-      items: itemsList
-          .map((e) => CartItemJson.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      categoryId: json['categoryId'] ?? 0,
+      items:
+      itemsList.map((e) => CartItemJson.fromJson(e)).toList(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'cartId': cartId,
+      'userId': userId,
+      'userName': userName,
+      'totalQuantity': totalQuantity,
+      'totalPrice': totalPrice,
+      'categoryId': categoryId,
+      // IMPORTANT: items encoded as JSON STRING
+      'itemsJson': jsonEncode(items.map((e) => e.toJson()).toList()),
+    };
   }
 }
 
+/* ===================== CART ITEM ===================== */
 class CartItemJson {
   final int productId;
   final double totalQuantity;
@@ -79,7 +107,9 @@ class CartItemJson {
   final double totalPrice;
   final int categoryId;
   final String coupon;
-  final String? itemName; // Optional field in some array elements
+  final String? itemName;
+  final String? image;
+  final int? storeId;
 
   CartItemJson({
     required this.productId,
@@ -90,18 +120,39 @@ class CartItemJson {
     required this.categoryId,
     required this.coupon,
     this.itemName,
+    this.image,
+    this.storeId,
   });
 
   factory CartItemJson.fromJson(Map<String, dynamic> json) {
     return CartItemJson(
-      productId: json['ProductId'] as int? ?? 0,
-      totalQuantity: (json['TotalQuantity'] as num?)?.toDouble() ?? 0.0,
+      productId: json['ProductId'] ?? 0,
+      totalQuantity:
+      (json['TotalQuantity'] as num?)?.toDouble() ?? 0.0,
       price: (json['Price'] as num?)?.toDouble() ?? 0.0,
       discount: (json['Discount'] as num?)?.toDouble() ?? 0.0,
-      totalPrice: (json['TotalPrice'] as num?)?.toDouble() ?? 0.0,
-      categoryId: json['CategoryId'] as int? ?? 0,
-      coupon: json['Coupon'] as String? ?? '',
-      itemName: json['ItemName'] as String?,
+      totalPrice:
+      (json['TotalPrice'] as num?)?.toDouble() ?? 0.0,
+      categoryId: json['CategoryId'] ?? 0,
+      coupon: json['Coupon'] ?? '',
+      itemName: json['ItemName'],
+      image: json['Image'],
+      storeId: json['StoreId'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'ProductId': productId,
+      'TotalQuantity': totalQuantity,
+      'Price': price,
+      'Discount': discount,
+      'TotalPrice': totalPrice,
+      'CategoryId': categoryId,
+      'Coupon': coupon,
+      if (itemName != null) 'ItemName': itemName,
+      if (image != null) 'Image': image,
+      if (storeId != null) 'StoreId': storeId,
+    };
   }
 }

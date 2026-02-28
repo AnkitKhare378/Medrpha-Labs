@@ -103,6 +103,7 @@ class _TestFilterPageState extends State<TestFilterPage> {
                 onPressed: () {
                   setState(() {
                     selectedSort = "Popularity";
+                    _selectedSymptomId = 0; // Reset symptom too
                   });
                 },
               ),
@@ -114,8 +115,12 @@ class _TestFilterPageState extends State<TestFilterPage> {
                     // Print before popping (optional, for debugging)
                     print("Selected Symptom ID: $_selectedSymptomId");
 
-                    Navigator.of(context).pop(_selectedSymptomId);
-                  },borderColor: Colors.blueAccent),
+                    Navigator.of(context).pop({
+                      "symptomId": _selectedSymptomId,
+                      "sortBy": selectedSort,
+                    });
+                  },
+                  borderColor: Colors.blueAccent),
             ),
           ],
         ),

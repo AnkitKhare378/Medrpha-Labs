@@ -29,69 +29,6 @@ class _HealthConcernScrollerState extends State<HealthConcernScroller> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> concerns = [
-      {
-        'label': 'Fever & Flu',
-        'icon': Icons.thermostat,
-        'color': Colors.orange.shade50,
-      },
-      {
-        'label': 'Diabetes Care',
-        'icon': Icons.bloodtype,
-        'color': Colors.red.shade50,
-      },
-      {
-        'label': 'Vitamin Levels',
-        'icon': Icons.opacity,
-        'color': Colors.yellow.shade50,
-      },
-      {
-        'label': 'Heart Health',
-        'icon': Icons.favorite,
-        'color': Colors.pink.shade50,
-      },
-      {
-        'label': 'Kidney Health',
-        'icon': Icons.water_drop,
-        'color': Colors.blue.shade50,
-      },
-      {
-        'label': 'Liver Care',
-        'icon': Icons.local_drink,
-        'color': Colors.green.shade50,
-      },
-      {
-        'label': 'Thyroid Care',
-        'icon': Icons.account_tree,
-        'color': Colors.purple.shade50,
-      },
-      {
-        'label': 'Pregnancy',
-        'icon': Icons.pregnant_woman,
-        'color': Colors.teal.shade50,
-      },
-      {
-        'label': 'Immunity Test',
-        'icon': Icons.security,
-        'color': Colors.cyan.shade50,
-      },
-      {
-        'label': 'Hormone Test',
-        'icon': Icons.science,
-        'color': Colors.indigo.shade50,
-      },
-      {
-        'label': 'Allergies',
-        'icon': Icons.grass,
-        'color': Colors.lightGreen.shade50,
-      },
-      {
-        'label': 'Cancer Care',
-        'icon': Icons.healing,
-        'color': Colors.deepOrange.shade50,
-      },
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -100,8 +37,8 @@ class _HealthConcernScrollerState extends State<HealthConcernScroller> {
           child: Text(
             "Test by health concerns",
             style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -209,36 +146,50 @@ class _HealthConcernScrollerState extends State<HealthConcernScroller> {
       child: Column(
         children: [
           InkWell(
-            onTap: (){
-              Navigator.of(context).push(SlidePageRoute(page: LabTestListPage(symptomId: symptom.id, labName: "Symptom",)),);
+            // Makes the splash/ripple effect rounded to match the border
+            borderRadius: BorderRadius.circular(15),
+            onTap: () {
+              Navigator.of(context).push(
+                SlidePageRoute(
+                  page: LabTestListPage(
+                    symptomId: symptom.id,
+                    labName: "Symptom",
+                  ),
+                ),
+              );
             },
             child: Container(
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(12),
+                // No background color, only a rounded border
+                color: Colors.transparent,
+                border: Border.all(color: Colors.grey.shade300, width: 1.5),
+                borderRadius: BorderRadius.circular(15),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: imageUrl != null
-                      ? Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2));
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Center(
-                          child: Icon(Icons.medication_outlined, size: 30, color: Colors.blueAccent));
-                    },
-                  )
-                      : const Center(
-                      child: Icon(Icons.medical_services_outlined, size: 30, color: Colors.blueAccent)),
+              // ClipRRect is used to make the Image follow the rounded border
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(13.5), // Slightly less than 15 to fit inside border
+                child: imageUrl != null
+                    ? Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Center(
+                      child: Icon(Icons.medication_outlined,
+                          size: 35, color: Colors.blueAccent),
+                    );
+                  },
+                )
+                    : const Center(
+                  child: Icon(Icons.medical_services_outlined,
+                      size: 35, color: Colors.blueAccent),
                 ),
               ),
             ),
@@ -249,7 +200,11 @@ class _HealthConcernScrollerState extends State<HealthConcernScroller> {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(fontSize: 12, color: Colors.black87),
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Colors.black87,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),

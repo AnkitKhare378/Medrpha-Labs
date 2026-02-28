@@ -18,6 +18,7 @@ import '../../../view_model/LabVM/AllSymptoms/symptom_event.dart';
 import '../../../view_model/LabVM/AllSymptoms/symptom_state.dart';
 import '../../Dashboard/widgets/slide_page_route.dart';
 import '../HomeScreen/widgets/popular_test_packages.dart';
+import '../HomeScreen/widgets/popular_test_scroller.dart';
 import 'lab_test_list_page.dart';
 import 'lab_test_static_data.dart';
 import 'widgets/lab_test_app_bar.dart';
@@ -125,9 +126,7 @@ class _LabTestPageState extends State<LabTestPage> {
 
   // Helper method to build a single symptom item using the Model
   Widget _buildSymptomItem(SymptomModel symptom) {
-    // Check if ApiConstants.symptomImageBaseUrl is defined, if not, use a default
     const imageBaseUrl = ApiConstants.symptomImageBaseUrl;
-
     final imageUrl = symptom.symptomsImage != null && symptom.symptomsImage!.isNotEmpty
         ? '$imageBaseUrl${symptom.symptomsImage}'
         : null;
@@ -137,39 +136,53 @@ class _LabTestPageState extends State<LabTestPage> {
       child: Column(
         children: [
           InkWell(
-            onTap: (){
-              Navigator.of(context).push(SlidePageRoute(page: LabTestListPage(symptomId: symptom.id, labName: "Symptom",)),);
+            onTap: () {
+              Navigator.of(context).push(
+                SlidePageRoute(
+                  page: LabTestListPage(
+                    symptomId: symptom.id,
+                    labName: "Symptom",
+                  ),
+                ),
+              );
             },
+            // Removed BoxDecoration, Padding, and ClipRRect for a clean look
             child: Container(
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(12),
+                // Set the border color and width here
+                border: Border.all(color: Colors.grey.shade300, width: 1.5),
+                // Set the roundness here
+                borderRadius: BorderRadius.circular(15),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: imageUrl != null
-                      ? Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2));
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Center(
-                          child: Icon(Icons.medication_outlined, size: 30, color: Colors.blueAccent));
-                    },
-                  )
-                      : const Center(
-                      child: Icon(Icons.medical_services_outlined, size: 30, color: Colors.blueAccent)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(13.5), // Slightly less than container to fit perfectly inside
+                child: imageUrl != null
+                    ? Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.medication_outlined,
+                      size: 40,
+                      color: Colors.blueAccent,
+                    );
+                  },
+                )
+                    : const Icon(
+                  Icons.medical_services_outlined,
+                  size: 40,
+                  color: Colors.blueAccent,
                 ),
               ),
-            ),
+            )
           ),
           const SizedBox(height: 8),
           Text(
@@ -214,7 +227,7 @@ class _LabTestPageState extends State<LabTestPage> {
                       'Test by Symptoms',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         color: Colors.black,
                       ),
                     ),
@@ -275,6 +288,9 @@ class _LabTestPageState extends State<LabTestPage> {
                   ),
                   // ---------------------------------------------
 
+                  const SizedBox(height: 16),
+                  PopularTestScroller(),
+
                   const SizedBox(height: 30),
 
                   // Carousel Slider Section 
@@ -322,8 +338,8 @@ class _LabTestPageState extends State<LabTestPage> {
                     child: Text(
                       'Offers for You',
                       style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
                         color: Colors.black,
                       ),
                     ),

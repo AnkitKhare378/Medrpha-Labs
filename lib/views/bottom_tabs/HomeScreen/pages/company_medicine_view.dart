@@ -5,9 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:medrpha_labs/views/bottom_tabs/HomeScreen/pages/widgets/medicine_grid_shimmer.dart';
 import '../../../../view_model/MedicineVM/get_medicine_by_store_bloc.dart';
 import '../../../Dashboard/widgets/slide_page_route.dart';
+import '../../CartScreen/store/cart_notifier.dart';
+import '../../CartScreen/widgets/go_to_cart_bar.dart';
 import 'medicine_detail_screen.dart';
 import 'widgets/medicine_product_card.dart';
-
 
 class CompanyMedicineView extends StatelessWidget {
   final int storeId;
@@ -21,6 +22,7 @@ class CompanyMedicineView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cartCount = context.watch<CartProvider>().totalCount;
     // 1. Fetch data on widget build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context
@@ -138,6 +140,9 @@ class CompanyMedicineView extends StatelessWidget {
           );
         },
       ),
+      bottomNavigationBar: cartCount > 0
+          ? GoToCartBar(cartCount: cartCount)
+          : null,
     );
   }
 }

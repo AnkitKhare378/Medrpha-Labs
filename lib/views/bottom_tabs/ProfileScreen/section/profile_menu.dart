@@ -9,10 +9,12 @@ import 'package:medrpha_labs/views/bottom_tabs/ProfileScreen/pages/about_page.da
 import 'package:medrpha_labs/views/bottom_tabs/ProfileScreen/pages/health_record_page.dart';
 import 'package:medrpha_labs/views/bottom_tabs/ProfileScreen/pages/help_support_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:provider/provider.dart';
+import '../../../../view_model/provider/family_provider.dart';
 import '../../../AppWidgets/app_snackbar.dart';
 import '../../../Dashboard/widgets/slide_page_route.dart';
 import '../../../login/login_screen.dart';
+import '../../CartScreen/store/cart_notifier.dart';
 import '../pages/family_members_page.dart';
 import '../pages/legal_information_page.dart';
 import '../pages/save_for_later_page.dart';
@@ -80,6 +82,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
     );
   }
 
+
   Future<void> _showSignOutDialog(BuildContext context) async {
     final bool? confirm = await showDialog<bool>(
       context: context,
@@ -105,10 +108,23 @@ class _ProfileMenuState extends State<ProfileMenu> {
               backgroundColor: Colors.blueAccent,
             ),
             onPressed: () async {
+              // 1. Get the Provider instance
+              // Use listen: false because we are inside a function
+              final cartProvider = Provider.of<CartProvider>(context, listen: false);
+              final familyProvider = Provider.of<FamilyProvider>(context, listen: false);
+              // 2. Clear the cart data locally
+              await cartProvider.clearLocalData();
+              familyProvider.clearSelection();
+
+              // 3. Clear User ID and Session
               final prefs = await SharedPreferences.getInstance();
               await prefs.remove('user_id');
+              // If you have other keys like 'token', remove them here too
+
+              // 4. Redirect to Login
+              if (!mounted) return;
               Navigator.of(ctx).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => LoginScreen()),
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
                     (Route<dynamic> route) => false,
               );
             },

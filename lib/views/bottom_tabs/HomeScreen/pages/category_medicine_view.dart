@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../data/repositories/medicine_service/category_medicine_service.dart';
 import '../../../../view_model/MedicineVM/category_medicine_bloc.dart';
+import '../../CartScreen/store/cart_notifier.dart';
+import '../../CartScreen/widgets/go_to_cart_bar.dart';
 import '../widgets/category_medicine_product_card.dart';
 
 class CategoryMedicineView extends StatefulWidget {
@@ -24,6 +26,7 @@ class CategoryMedicineView extends StatefulWidget {
 class _CategoryMedicineViewState extends State<CategoryMedicineView> {
   @override
   Widget build(BuildContext context) {
+    final cartCount = context.watch<CartProvider>().totalCount;
     return BlocProvider(
       create: (context) => CategoryMedicineBloc(CategoryMedicineService())
         ..add(FetchMedicines(id: widget.id, type: widget.fetchType)),
@@ -91,6 +94,9 @@ class _CategoryMedicineViewState extends State<CategoryMedicineView> {
               return const SizedBox();
             },
           ),
+          bottomNavigationBar: cartCount > 0
+              ? GoToCartBar(cartCount: cartCount)
+              : null,
         ),
       ),
     );

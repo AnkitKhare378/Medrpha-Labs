@@ -266,11 +266,16 @@ class _SelectAddressPageState extends State<SelectAddressPage> {
                     final formatted = formatAddress(displayMap);
                     final addressId = selected.id;
                     final addressTypeId = selected.addressTypeId;
+                    final lat = selected.latitude; // or selected.latitude
+                    final lng = selected.longitude;
+
                     Navigator.pop(context, {
                       ...displayMap,
                       'address': formatted,
                       'addressId': addressId,
                       'addressTypeId' : addressTypeId,
+                      'lat': lat, // Pass Lat
+                      'lng': lng,
                     });
                   },
                 ),

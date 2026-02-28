@@ -2,7 +2,6 @@
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-
 import '../../data/repositories/all_banner_service/get_all_banner_service.dart';
 import '../../models/BannerM/get_all_banner_model.dart';
 

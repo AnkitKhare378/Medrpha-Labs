@@ -21,7 +21,7 @@ class LabTestListPage extends StatefulWidget {
   final int? symptomId;
   final String labName;
 
-  const LabTestListPage({this.labId, this.symptomId,required this.labName, super.key});
+  const LabTestListPage({this.labId, this.symptomId, required this.labName, super.key});
 
   @override
   State<LabTestListPage> createState() => _LabTestListPageState();
@@ -31,6 +31,8 @@ class _LabTestListPageState extends State<LabTestListPage> {
   late int labId;
   int symptomId = 0;
   String searchName = '';
+  // ✅ Added variable to track sorting
+  String selectedSort = "Popularity";
 
   @override
   void initState() {
@@ -40,24 +42,23 @@ class _LabTestListPageState extends State<LabTestListPage> {
   }
 
   void _navigateToFilterPage() async {
-    final int? newSymptomId = await Navigator.of(context).push(
+    // ✅ Catch the Map containing both ID and Sort string
+    final Map<String, dynamic>? filterData = await Navigator.of(context).push(
       SlidePageRoute(
         page: TestFilterPage(
           initialSymptomId: symptomId,
-          onApplyFilter: (id) {
-            return id;
-          },
+          onApplyFilter: (id) {},
         ),
       ),
     );
 
-    if (newSymptomId != null && newSymptomId != symptomId) {
+    if (filterData != null) {
       setState(() {
-        symptomId = newSymptomId;
+        symptomId = filterData["symptomId"] ?? 0;
+        selectedSort = filterData["sortBy"] ?? "Popularity";
       });
 
-      print("Selected Symptom ID in LabTestListPage: $symptomId");
-
+      // Refresh API data for the new symptom
       context.read<LabTestSearchCubit>().searchLabTests(
         name: searchName,
         labId: labId,
@@ -71,15 +72,8 @@ class _LabTestListPageState extends State<LabTestListPage> {
     final cartCount = context.watch<CartProvider>().totalCount;
     return BlocProvider(
       key: ValueKey(symptomId),
-      create: (context) {
-        final cubit = LabTestSearchCubit(TestSearchService());
-        cubit.searchLabTests(
-          name: searchName,
-          labId: labId,
-          symptomId: symptomId,
-        );
-        return cubit;
-      },
+      create: (context) => LabTestSearchCubit(TestSearchService())
+        ..searchLabTests(name: searchName, labId: labId, symptomId: symptomId),
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
@@ -89,40 +83,33 @@ class _LabTestListPageState extends State<LabTestListPage> {
               LabTestAppBar(
                 searchTexts: const ["Blood", "Diabetes", "Full Body"],
                 onBack: () => Navigator.pop(context),
-                // Assuming LabTestAppBar has a search field that calls this when input changes
-                // onSearchChanged: (value) => _performSearch(context, value),
               ),
-
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Text(
                         "Showing results for ${widget.labName}",
                         style: GoogleFonts.poppins(fontSize: 13, color: Colors.black87),
-                        maxLines: 2,
-                        overflow: TextOverflow.visible,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Row(
                       children: [
-                        SortFilterButton(label: "Sort", icon: Iconsax.arrow_up_2, onPressed: () {/* handle sort */}),
+                        SortFilterButton(label: "Sort", icon: Iconsax.arrow_up_2, onPressed: _navigateToFilterPage,),
                         const SizedBox(width: 10),
                         SortFilterButton(
                           label: "Filter",
                           icon: Iconsax.filter,
-                          onPressed: _navigateToFilterPage, // **Use the new method**
+                          onPressed: _navigateToFilterPage,
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-
               Expanded(
                 child: BlocBuilder<LabTestSearchCubit, LabTestState>(
                   builder: (context, state) {
@@ -131,79 +118,58 @@ class _LabTestListPageState extends State<LabTestListPage> {
                     } else if (state is LabTestError) {
                       return Center(child: Text(state.message, style: GoogleFonts.poppins(color: Colors.red)));
                     } else if (state is LabTestLoaded) {
-                      final List<LabTest> tests = state.tests;
+                      // ✅ Sorting Logic
+                      List<LabTest> tests = List.from(state.tests);
 
-                      if (tests.isEmpty) {
-                        return const NoDataFoundScreen();
+                      // Change '.price' to whatever your model variable is (e.g., .rate or .mrp)
+                      if (selectedSort == "Low to High") {
+                        tests.sort((a, b) => (a.testPrice ?? 0).compareTo(b.testPrice ?? 0));
+                      } else if (selectedSort == "High to Low") {
+                        tests.sort((a, b) => (b.testPrice ?? 0).compareTo(a.testPrice ?? 0));
                       }
+
+                      if (tests.isEmpty) return const NoDataFoundScreen();
 
                       return ListView.builder(
                         itemCount: tests.length,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemBuilder: (context, index) {
-                          final test = tests[index];
-                          return TestCard(test: test);
+                          return TestCard(test: tests[index]);
                         },
                       );
                     }
-                    return Center(child: Text("Start searching for tests...", style: GoogleFonts.poppins()));
+                    return Center(child: Text("Start searching...", style: GoogleFonts.poppins()));
                   },
                 ),
               ),
             ],
           ),
         ),
-        bottomNavigationBar: cartCount > 0
-            ? Container(
-          margin: const EdgeInsets.all(16),
-          padding:
-          const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '$cartCount item${cartCount > 1 ? 's' : ''} in cart',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  onPressed: () =>
-                      Navigator.pushNamed(context, RoutesName.cartScreen),
-                  child: Text(
-                    'Go to Cart',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
+        bottomNavigationBar: cartCount > 0 ? _buildCartBottomBar(context, cartCount) : null,
+      ),
+    );
+  }
+
+  Widget _buildCartBottomBar(BuildContext context, int cartCount) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: SafeArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('$cartCount items in cart', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.primaryColor),
+              onPressed: () => Navigator.pushNamed(context, RoutesName.cartScreen),
+              child: const Text('Go to Cart'),
             ),
-          ),
-        )
-            : null,
+          ],
+        ),
       ),
     );
   }

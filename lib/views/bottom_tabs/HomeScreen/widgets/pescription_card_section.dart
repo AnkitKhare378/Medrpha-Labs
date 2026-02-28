@@ -99,7 +99,7 @@ class PrescriptionCard extends StatelessWidget {
                 title,
                 style: GoogleFonts.poppins(
                   fontSize: 15,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   color: Colors.black87,
                   height: 1.2,
                 ),

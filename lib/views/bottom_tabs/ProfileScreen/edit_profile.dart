@@ -7,6 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../config/color/colors.dart';
 import '../../../data/repositories/customer_service/edit_profile_service.dart';
+import '../../../models/BloodM/get_blood_model.dart';
+import '../../../view_model/BloodVM/get_blood_view_model.dart';
 import '../../../view_model/CustomerVM/edit_profile_cubit.dart'; // Ensure this path is correct
 import 'widgets/custom_app_bar.dart';
 import 'widgets/date_picker_modal.dart';
@@ -15,37 +17,22 @@ import 'widgets/image_picker_modal.dart';
 import 'widgets/photo_upload_button.dart';
 import 'widgets/profile_form_fields.dart';
 
-class EditProfileScreen extends StatelessWidget {
-  final String name;
-  final String email;
-  final String phone;
-  EditProfileScreen({Key? key, required this.name, required this.email, required this.phone });
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => EditProfileCubit(EditProfileService()),
-      child: _EditProfileView(name: name, email: email, phone: phone),
-    );
-  }
-}
-
-class _EditProfileView extends StatefulWidget {
+class EditProfileScreen extends StatefulWidget {
   final String name;
   final String email;
   final String phone;
 
-  const _EditProfileView({
+  const EditProfileScreen({
     required this.name,
     required this.email,
     required this.phone,
   });
 
   @override
-  State<_EditProfileView> createState() => _EditProfileScreenState();
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<_EditProfileView> {
+class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -59,6 +46,7 @@ class _EditProfileScreenState extends State<_EditProfileView> {
 
   int? _currentUserId;
   bool _isLoadingInitialData = true;
+  GetBloodGroupModel? selectedBloodGroup;
 
   @override
   void initState() {
@@ -70,6 +58,9 @@ class _EditProfileScreenState extends State<_EditProfileView> {
     firstNameController.text = nameParts.isNotEmpty ? nameParts.first : '';
     lastNameController.text = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
     _loadInitialData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<GetBloodGroupBloc>().add(const FetchBloodGroups());
+    });
   }
 
   @override
@@ -92,6 +83,50 @@ class _EditProfileScreenState extends State<_EditProfileView> {
         _isLoadingInitialData = false;
       });
     }
+  }
+
+  Widget _buildBloodGroupDropdown() {
+    return BlocBuilder<GetBloodGroupBloc, GetBloodGroupState>(
+      builder: (context, state) {
+        List<GetBloodGroupModel> items = [];
+        String hint = "Select Blood Group";
+
+        if (state is GetBloodGroupLoading) {
+          hint = "Loading...";
+        } else if (state is GetBloodGroupLoaded) {
+          items = state.bloodGroups;
+        } else if (state is GetBloodGroupError) {
+          hint = "Error loading data";
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<GetBloodGroupModel>(
+              isExpanded: true,
+              hint: Text(hint, style: GoogleFonts.poppins(fontSize: 14)),
+              value: selectedBloodGroup,
+              items: items.map((bg) {
+                return DropdownMenuItem(
+                  value: bg,
+                  child: Text(bg.name, style: GoogleFonts.poppins()),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedBloodGroup = value;
+                });
+              },
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -128,7 +163,20 @@ class _EditProfileScreenState extends State<_EditProfileView> {
       return;
     }
 
+    if (selectedBloodGroup == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a blood group'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
     final cubit = context.read<EditProfileCubit>();
+
+    String genderId = selectedGender == 'Male' ? '1' : '2';
+
+    String formattedDob = selectedDate != null
+        ? "${DateFormat('yyyy-MM-dd').format(selectedDate!)}T00:00:00.000"
+        : "";
 
     final String fullName = "${firstNameController.text.trim()} ${lastNameController.text.trim()}";
     final String cleanPhone = phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
@@ -138,6 +186,9 @@ class _EditProfileScreenState extends State<_EditProfileView> {
       customerName: fullName,
       emailId: emailController.text.trim(),
       phoneNumber: cleanPhone,
+      dob: formattedDob,
+      gender: genderId,
+      bloodGroup: selectedBloodGroup!.id.toString(),
       photoPath: _selectedImage?.path,
     );
   }
@@ -241,6 +292,18 @@ class _EditProfileScreenState extends State<_EditProfileView> {
                         }
                       },
                     ),
+
+                    const SizedBox(height: 0),
+                    Text(
+                      'Blood Group',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildBloodGroupDropdown(),
 
                     const SizedBox(height: 40),
 

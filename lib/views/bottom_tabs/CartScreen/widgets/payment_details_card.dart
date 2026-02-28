@@ -14,8 +14,8 @@ class PaymentDetailsCard extends StatelessWidget {
     double discountedTotal = 0;
 
     for (final item in cart.items.values) {
-      final original = double.tryParse(item.originalPrice) ?? 0;
-      final discounted = double.tryParse(item.discountedPrice) ?? 0;
+      final original = item.originalPrice ?? 0.0;
+      final discounted = item.discountedPrice ?? 0;
       mrpTotal += original * item.qty;
       discountedTotal += discounted * item.qty;
     }
@@ -43,7 +43,7 @@ class PaymentDetailsCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _buildRow("MRP Total", "₹${mrpTotal.toStringAsFixed(2)}"),
-            _buildRow("Product Discount", "-₹${productDiscount.toStringAsFixed(2)}",
+            _buildRow("Product Discount", "-₹${productDiscount.toStringAsFixed(2)}", keyColor: Colors.green,
                 valueColor: Colors.green),
             _buildRow("Delivery Fee", "₹${deliveryFee.toStringAsFixed(2)}"),
             _buildRow("Platform Fee", "₹${platformFee.toStringAsFixed(2)}"),
@@ -57,7 +57,7 @@ class PaymentDetailsCard extends StatelessWidget {
   }
 
   Widget _buildRow(String title, String value,
-      {bool isBold = false, Color? valueColor}) {
+      {bool isBold = false, Color? valueColor, Color? keyColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -65,6 +65,7 @@ class PaymentDetailsCard extends StatelessWidget {
         children: [
           Text(title,
               style: GoogleFonts.poppins(
+                  color: keyColor,
                   fontSize: 14,
                   fontWeight: isBold ? FontWeight.w600 : FontWeight.w400)),
           Text(value,

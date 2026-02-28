@@ -4,14 +4,23 @@ import 'package:equatable/equatable.dart';
 import '../../data/repositories/package_service/package_service.dart';
 import '../../models/PackagesM/package_model.dart';
 
+// --- Events ---
 abstract class PackageEvent extends Equatable {
   const PackageEvent();
   @override
   List<Object> get props => [];
 }
 
-class FetchPackages extends PackageEvent {}
+class FetchPackages extends PackageEvent {
+  final int labId; // Added labId parameter
 
+  const FetchPackages({required this.labId});
+
+  @override
+  List<Object> get props => [labId];
+}
+
+// --- States ---
 abstract class PackageState extends Equatable {
   const PackageState();
   @override
@@ -38,6 +47,7 @@ class PackageError extends PackageState {
   List<Object> get props => [message];
 }
 
+// --- Bloc ---
 class PackageBloc extends Bloc<PackageEvent, PackageState> {
   final PackageService _packageService = PackageService();
 
@@ -45,10 +55,11 @@ class PackageBloc extends Bloc<PackageEvent, PackageState> {
     on<FetchPackages>(_onFetchPackages);
   }
 
-  void _onFetchPackages(FetchPackages event, Emitter<PackageState> emit) async {
+  Future<void> _onFetchPackages(FetchPackages event, Emitter<PackageState> emit) async {
     emit(PackageLoading());
     try {
-      final packages = await _packageService.fetchPackages();
+      // Passing the labId from the event to the service method
+      final packages = await _packageService.fetchPackages(event.labId);
       emit(PackageLoaded(packages));
     } catch (e) {
       emit(PackageError("Failed to load packages: ${e.toString()}"));

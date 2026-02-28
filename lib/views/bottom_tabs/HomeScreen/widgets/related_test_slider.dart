@@ -64,7 +64,7 @@ class RelatedTestCard extends StatelessWidget {
 
             // 2. Test Name (maxLines: 2) -> ~35-40px
             Text(
-              test.synonymName,
+              test.testName,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.poppins(
@@ -91,7 +91,7 @@ class RelatedTestCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  test.testCode,
+                  test.labName ?? "",
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     color: AppColors.primaryColor,
@@ -128,7 +128,7 @@ class RelatedTestsSlider extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 20,),
+          const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
             child: Text(
@@ -141,54 +141,58 @@ class RelatedTestsSlider extends StatelessWidget {
             ),
           ),
 
-          // BLoC Builder to handle loading and data states
           BlocBuilder<TestSynonymBloc, TestSynonymState>(
             builder: (context, state) {
               if (state is TestSynonymLoading) {
-                // Return a simple loading placeholder for the slider area
                 return _buildShimmerSlider();
               }
 
               if (state is TestSynonymError) {
-                // Show error message
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text("Failed to load related items: ${state.message}"),
+                  child: Text(
+                    "Failed to load related items: ${state.message}",
+                    style: GoogleFonts.poppins(color: Colors.red, fontSize: 12),
+                  ),
                 );
               }
 
               if (state is TestSynonymLoaded) {
                 if (state.synonyms.isEmpty) {
-
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       "No related items found",
                       style: GoogleFonts.poppins(
                         fontSize: 14,
-                        color: Colors.black87,
+                        color: Colors.black54,
                       ),
                     ),
                   );
                 }
 
-                // Horizontal ListView
-                return InkWell(
-                  onTap: (){
-                    Navigator.of(context).push(
-                      SlidePageRoute(page: LabTestDetailPage(testId: testId)),
-                    );
-                  },
-                  child: SizedBox(
-                    height: 200, // Set a fixed height for the slider content
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: state.synonyms.length,
-                      itemBuilder: (context, index) {
-                        return RelatedTestCard(test: state.synonyms[index]);
-                      },
-                    ),
+                return SizedBox(
+                  height: 200,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: state.synonyms.length,
+                    itemBuilder: (context, index) {
+                      final synonym = state.synonyms[index];
+
+                      // ✅ Wrap individual item in InkWell for specific navigation
+                      return InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            SlidePageRoute(
+                              page: LabTestDetailPage(testId: synonym.testID),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: RelatedTestCard(test: synonym),
+                      );
+                    },
                   ),
                 );
               }
@@ -202,16 +206,14 @@ class RelatedTestsSlider extends StatelessWidget {
     );
   }
 
-  // Simple placeholder for the loading state of the slider
   Widget _buildShimmerSlider() {
     return SizedBox(
       height: 180,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: 3, // Show 3 shimmer cards
+        itemCount: 3,
         itemBuilder: (context, index) {
-          // You can replace this with a proper shimmer effect if available
           return Container(
             width: 200,
             height: 180,

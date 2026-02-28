@@ -21,10 +21,10 @@ class MedicineProductCard extends StatefulWidget {
   final VoidCallback? onTap;
 
   const MedicineProductCard({
-    Key? key,
+    super.key,
     required this.medicine,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   State<MedicineProductCard> createState() => _MedicineProductCardState();
@@ -55,8 +55,8 @@ class _MedicineProductCardState extends State<MedicineProductCard> {
 
   // --- Helper Getters ---
   String get _productName => widget.medicine.product ?? 'Medicine Name';
-  String get _salePrice => widget.medicine.salePrice?.toStringAsFixed(2) ?? '0.00';
-  String get _mrpPrice => widget.medicine.mrpPrice?.toStringAsFixed(2) ?? '0.00';
+  double get _salePrice => widget.medicine.salePrice ?? 0.00;
+  double get _mrpPrice => widget.medicine.mrpPrice ?? 0.00;
   String get _imageUrl => 'https://via.placeholder.com/160';
 
   // ✅ Fix for CartProvider keying issue: Create a unique key string
@@ -89,8 +89,8 @@ class _MedicineProductCardState extends State<MedicineProductCard> {
     final qty = cart.qty(_uniqueKey);
 
     final productId = widget.medicine.id ?? 0;
-    final originalPriceString = '₹$_mrpPrice';
-    final discountedPriceString = '₹$_salePrice';
+    final originalPriceString = _mrpPrice;
+    final discountedPriceString = _salePrice;
 
     // Check if the item is currently being processed by an API call
     final bool isProductLoading = cart.isProductLoading(productId);
@@ -166,7 +166,7 @@ class _MedicineProductCardState extends State<MedicineProductCard> {
                   // Price
                   Row(
                     children: [
-                      Text('₹$_salePrice', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primaryColor,)),
+                      Text('$_salePrice', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primaryColor,)),
                       const SizedBox(width: 8),
                       if (widget.medicine.mrpPrice != null && widget.medicine.mrpPrice! > widget.medicine.salePrice!)
                         Text('₹$_mrpPrice', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey, decoration: TextDecoration.lineThrough,)),
@@ -213,6 +213,7 @@ class _MedicineProductCardState extends State<MedicineProductCard> {
                             cart.add(
                               userId: _userId,
                               productId: productId,
+                              labId: 1,
                               name: _uniqueKey,
                               categoryId: _medicineCategoryId,
                               originalPrice: originalPriceString,
@@ -246,6 +247,7 @@ class _MedicineProductCardState extends State<MedicineProductCard> {
                               padding: EdgeInsets.zero,
                               onPressed: () => cart.remove(
                                 userId: _userId,
+                                labId: 1,
                                 productId: productId,
                                 name: _uniqueKey, // ✅ Use unique key
                                 categoryId: _medicineCategoryId,
@@ -263,6 +265,7 @@ class _MedicineProductCardState extends State<MedicineProductCard> {
                               padding: EdgeInsets.zero,
                               onPressed: () => cart.add(
                                 userId: _userId,
+                                labId: 1,
                                 productId: productId,
                                 name: _uniqueKey, // ✅ Use unique key
                                 categoryId: _medicineCategoryId,

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:medrpha_labs/config/apiConstant/api_constant.dart';
+import 'package:medrpha_labs/views/bottom_tabs/ProfileScreen/widgets/family_members_icon_section.dart';
 import 'package:provider/provider.dart';
 import '../../../../models/FamilyMemberM/get_family_members_model.dart';
 import '../../../../view_model/FamilyMemberVM/DeleteFamilyMember/family_member_delete_cubit.dart';
 import '../../../../view_model/FamilyMemberVM/UpdateFamilyMember/family_member_update_cubit.dart';
-import '../../../../view_model/FamilyMemberVM/get_family_members_view_model.dart'; // Contains GetFamilyMembersCubit/State
+import '../../../../view_model/FamilyMemberVM/get_family_members_view_model.dart';
+import '../../../../view_model/FamilyMemberVM/relation_cubit.dart';
 import '../../../../view_model/provider/family_provider.dart';
 import '../../../Dashboard/widgets/slide_page_route.dart';
 import '../../HomeScreen/pages/widgets/add_more_test_button.dart';
@@ -22,19 +24,13 @@ class FamilyMembersPage extends StatefulWidget {
 }
 
 class _FamilyMembersPageState extends State<FamilyMembersPage> {
-  static const Map<int, String> relationMap = {
-    3: "Wify",
-    4: "Brother",
-    5: "Father",
-    6: "Sister",
-  };
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Fetch initial data when the page loads
+      // Fetching both members and relation mapping on load
       context.read<GetFamilyMembersCubit>().fetchFamilyMembers();
+      context.read<RelationCubit>().fetchRelations();
     });
   }
 
@@ -46,10 +42,6 @@ class _FamilyMembersPageState extends State<FamilyMembersPage> {
       age--;
     }
     return '$age yrs';
-  }
-
-  String _getRelationName(int relationId) {
-    return relationMap[relationId] ?? 'Unknown';
   }
 
   Future<bool> _confirmDelete(BuildContext context, String name) async {
@@ -68,152 +60,142 @@ class _FamilyMembersPageState extends State<FamilyMembersPage> {
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Cancel',
-                  style: GoogleFonts.poppins(color: Colors.grey)),
+              child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: Text('Delete',
-                  style: GoogleFonts.poppins(color: Colors.redAccent)),
+              child: Text('Delete', style: GoogleFonts.poppins(color: Colors.redAccent)),
             ),
           ],
         );
       },
-    ) ?? false;
+    ) ??
+        false;
   }
 
   Widget _memberCard({
-    required String initial,
     required String name,
     required String relation,
     required String age,
     required String image,
-    required double completion,
     required VoidCallback onTap,
     required VoidCallback onDelete,
+    required VoidCallback onEdit,
     bool isSelected = false,
   }) {
-    const Color cardPrimaryColor = Colors.blueAccent; // Keeping original color for consistency
+    const Color activeColor = Colors.blueAccent;
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? activeColor.withOpacity(0.05) : Colors.white,
+          borderRadius: BorderRadius.circular(15),
           border: Border.all(
-            color: isSelected ? cardPrimaryColor : Colors.transparent,
+            color: isSelected ? activeColor : Colors.transparent,
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: isSelected
-                  ? cardPrimaryColor.withOpacity(0.2)
-                  : cardPrimaryColor.withOpacity(0.1),
-              blurRadius: 10,
+              color: isSelected ? activeColor.withOpacity(0.2) : Colors.black.withOpacity(0.05),
+              blurRadius: isSelected ? 12 : 8,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 25,
-              backgroundColor: cardPrimaryColor.withOpacity(0.15),
-              child: Image.network('${ApiConstants.familyMembersImageUrl}${image}'),
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: isSelected ? activeColor : Colors.grey[200],
+                  child: Padding(
+                    padding: const EdgeInsets.all(2.0),
+                    child: CircleAvatar(
+                      radius: 26,
+                      backgroundColor: Colors.white,
+                      child: ClipOval(
+                        child: Image.network(
+                          '${ApiConstants.familyMembersImageUrl}$image',
+                          width: 52,
+                          height: 52,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.person, color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(2),
+                      child: const Icon(Icons.check, color: Colors.white, size: 14),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    name,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      color: isSelected ? activeColor : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
-                      Text(
-                        name,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: activeColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          relation,
+                          style: GoogleFonts.poppins(
+                            color: activeColor,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 10,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Text(
-                        relation,
+                        'Age: $age',
                         style: GoogleFonts.poppins(
-                          color: cardPrimaryColor,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 11,
+                          color: Colors.grey[600],
                         ),
                       ),
                     ],
                   ),
-                  Text(
-                    'Age: $age',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  LinearProgressIndicator(
-                    value: completion,
-                    minHeight: 6,
-                    borderRadius: BorderRadius.circular(4),
-                    backgroundColor: cardPrimaryColor.withOpacity(0.2),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      cardPrimaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Profile completion: ${(completion * 100).toInt()}%',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
                 ],
               ),
             ),
-            GestureDetector(
-              onTap: onDelete,
-              child: const Padding(
-                padding: EdgeInsets.only(left: 10.0),
-                child: Icon(
-                  Icons.delete,
-                  size: 24,
-                  color: Colors.redAccent,
-                ),
-              ),
-            ),
+            FamilyMembersIconSection(onDelete: onDelete, onEdit: onEdit)
           ],
         ),
       ),
     );
-  }
-
-  // Helper to calculate profile completion percentage based on filled fields
-  double _getCompletion(FamilyMemberModel member) {
-    int totalFields = 10; // id, userId, relationMaster are excluded
-    int filledFields = 0;
-
-    // Check non-nullable fields based on your model
-    if (member.firstName.isNotEmpty) filledFields++;
-    if (member.lastName.isNotEmpty) filledFields++;
-    if (member.age > 0) filledFields++;
-    if (member.relationId > 0) filledFields++;
-    if (member.gender.isNotEmpty) filledFields++;
-    // member.dateOfBirth is required
-    if (member.heightCM > 0) filledFields++;
-    if (member.weightKG > 0) filledFields++;
-    if (member.address.isNotEmpty) filledFields++;
-
-    // Check nullable fields
-    if (member.bloodGroup != null && member.bloodGroup!.isNotEmpty) filledFields++;
-    if (member.uploadPhoto != null && member.uploadPhoto!.isNotEmpty) filledFields++;
-
-    return filledFields / totalFields;
   }
 
   @override
@@ -221,14 +203,16 @@ class _FamilyMembersPageState extends State<FamilyMembersPage> {
     return SafeArea(
       top: false,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF0F4F8),
+        backgroundColor: const Color(0xFFF8FAFC),
         appBar: AppBar(
           title: Text(
             'Family Members',
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
           ),
+          centerTitle: true,
           backgroundColor: Colors.blueAccent,
           foregroundColor: Colors.white,
+          elevation: 0,
         ),
         body: BlocListener<FamilyMemberDeleteCubit, FamilyMemberDeleteState>(
           listener: (context, state) {
@@ -236,14 +220,11 @@ class _FamilyMembersPageState extends State<FamilyMembersPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(state.message)),
               );
-              // After successful deletion, refresh the list
               context.read<GetFamilyMembersCubit>().refreshMembers();
             } else if (state is FamilyMemberDeleteError) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text(state.message), backgroundColor: Colors.red),
+                SnackBar(content: Text(state.message), backgroundColor: Colors.red),
               );
-              // If there was an error, refresh to ensure the list state is correct
               context.read<GetFamilyMembersCubit>().refreshMembers();
             }
           },
@@ -252,120 +233,109 @@ class _FamilyMembersPageState extends State<FamilyMembersPage> {
             child: Column(
               children: [
                 Expanded(
-                  child: BlocBuilder<GetFamilyMembersCubit, GetFamilyMembersState>(
-                    builder: (context, state) {
-                      if (state is GetFamilyMembersLoaded) {
-                        if (state.members.isEmpty) {
-                          return const Center(
-                            child: Text('No family members found. Tap "Add new member" to begin.'),
-                          );
+                  // Outer BlocBuilder to get Relations
+                  child: BlocBuilder<RelationCubit, RelationState>(
+                    builder: (context, relationState) {
+                      // Create a local mapping for quick lookup
+                      final Map<int, String> relationMap = {};
+                      if (relationState is RelationLoaded) {
+                        for (var r in relationState.relations) {
+                          relationMap[r.id] = r.relationName;
                         }
+                      }
 
-                        // Build the list from the fetched data
-                        return ListView(
-                          padding: const EdgeInsets.only(top: 16),
-                          children: state.members.map((member) {
-                            final memberId = member.id;
-                            String initial = member.firstName.isNotEmpty
-                                ? member.firstName[0].toUpperCase()
-                                : '?';
-                            String age = _calculateAge(member.dateOfBirth);
-                            double completion = _getCompletion(member);
-                            String relationName = _getRelationName(member.relationId);
+                      // Inner BlocBuilder for Family Members
+                      return BlocBuilder<GetFamilyMembersCubit, GetFamilyMembersState>(
+                        builder: (context, state) {
+                          if (state is GetFamilyMembersLoaded) {
+                            if (state.members.isEmpty) {
+                              return Center(
+                                child: Text(
+                                  'No family members found.\nTap "+ Add new member" to begin.',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.poppins(color: Colors.grey),
+                                ),
+                              );
+                            }
 
-                            // Use Consumer to listen for changes in the selected member
-                            return Consumer<FamilyProvider>(
-                              builder: (context, familyProvider, child) {
-                                // Check if this specific member is the one currently selected
-                                final bool isSelected = familyProvider.selectedMember?.id == memberId;
+                            if (state.members.isNotEmpty) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                context.read<FamilyProvider>().setDefaultMember(state.members.first);
+                              });
+                            }
 
-                                return Dismissible(
-                                  key: ValueKey(memberId),
-                                  direction: DismissDirection.endToStart,
-                                  background: Container(
-                                    alignment: Alignment.centerRight,
-                                    padding: const EdgeInsets.only(right: 20.0),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.shade600,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    margin: const EdgeInsets.only(bottom: 16),
-                                    child: const Icon(Icons.delete, color: Colors.white),
-                                  ),
-                                  confirmDismiss: (direction) async {
-                                    return await _confirmDelete(context, member.firstName);
+                            return ListView.builder(
+                              padding: const EdgeInsets.only(top: 16),
+                              itemCount: state.members.length,
+                              itemBuilder: (context, index) {
+                                final member = state.members[index];
+                                final memberId = member.id;
+                                String age = _calculateAge(member.dateOfBirth);
+
+                                // Dynamic Relation Lookup
+                                String relationName = relationMap[member.relationId] ?? 'Unknown';
+
+                                return Consumer<FamilyProvider>(
+                                  builder: (context, familyProvider, child) {
+                                    final bool isSelected = familyProvider.selectedMember?.id == memberId;
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 16),
+                                      child: _memberCard(
+                                        isSelected: isSelected,
+                                        image: member.uploadPhoto ?? '',
+                                        name: '${member.firstName} ${member.lastName}',
+                                        relation: relationName,
+                                        age: age,
+                                        onTap: () {
+                                          familyProvider.selectMember(member);
+                                          context.read<FamilyMemberUpdateCubit>().resetState();
+                                          Navigator.pop(context);
+                                        },
+                                        onEdit: () async {
+                                          await Navigator.of(context).push(
+                                            SlidePageRoute(page: UpdateMemberPage(member: member)),
+                                          );
+                                          context.read<GetFamilyMembersCubit>().refreshMembers();
+                                        },
+                                        onDelete: () async {
+                                          if (await _confirmDelete(context, member.firstName)) {
+                                            context.read<FamilyMemberDeleteCubit>().deleteMember(memberId);
+                                          }
+                                        },
+                                      ),
+                                    );
                                   },
-                                  onDismissed: (direction) {
-                                    context.read<FamilyMemberDeleteCubit>().deleteMember(memberId);
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(bottom: 16),
-                                    child: _memberCard(
-                                      isSelected: isSelected, // Pass the selection state to the card
-                                      image: member.uploadPhoto ?? '',
-                                      initial: initial,
-                                      name: '${member.firstName} ${member.lastName}',
-                                      relation: relationName,
-                                      age: age,
-                                      completion: completion,
-                                      onTap: () async {
-                                        familyProvider.selectMember(member);
-                                        context.read<FamilyMemberUpdateCubit>().resetState();
-
-                                        await Navigator.of(context).push(
-                                          SlidePageRoute(
-                                            page: UpdateMemberPage(member: member),
-                                          ),
-                                        );
-
-                                        context.read<GetFamilyMembersCubit>().refreshMembers();
-                                      },
-                                      onDelete: () async {
-                                        if (await _confirmDelete(context, member.firstName)) {
-                                          context.read<FamilyMemberDeleteCubit>().deleteMember(memberId);
-                                        }
-                                      },
-                                    ),
-                                  ),
                                 );
                               },
                             );
-                          }).toList(),
-                        );
-                      }
+                          }
 
-                      // Handle loading and error states below
-                      if (state is GetFamilyMembersLoading ||
-                          state is GetFamilyMembersInitial) {
-                        return const FamilyMemberShimmer();
-                      }
+                          if (state is GetFamilyMembersLoading || state is GetFamilyMembersInitial) {
+                            return const FamilyMemberShimmer();
+                          }
 
-                      if (state is GetFamilyMembersError) {
-                        return Center(
-                            child: Text(
-                                'Failed to load members: ${state.message}'));
-                      }
-
-                      return const SizedBox.shrink();
+                          return const SizedBox.shrink();
+                        },
+                      );
                     },
                   ),
                 ),
-
-                AddMoreTestButton(
-                  onPressed: () async {
-                    // Navigate to add new member page
-                    await Navigator.of(
-                      context,
-                    ).push(SlidePageRoute(page: const AddNewMemberPage()));
-                    // Refresh the list when returning from add screen
-                    context.read<GetFamilyMembersCubit>().refreshMembers();
-                  },
-                  title: '+ Add new member',
-                  backgroundColor: Colors.blueAccent,
-                  textColor: Colors.white,
-                  borderColor: Colors.blueAccent,
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: AddMoreTestButton(
+                    onPressed: () async {
+                      await Navigator.of(context).push(
+                        SlidePageRoute(page: const AddNewMemberPage()),
+                      );
+                      context.read<GetFamilyMembersCubit>().refreshMembers();
+                    },
+                    title: '+ Add new member',
+                    backgroundColor: Colors.blueAccent,
+                    textColor: Colors.white,
+                    borderColor: Colors.blueAccent,
+                  ),
                 ),
-                const SizedBox(height: 10)
               ],
             ),
           ),

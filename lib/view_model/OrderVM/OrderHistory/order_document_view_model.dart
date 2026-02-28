@@ -1,5 +1,6 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+// lib/view_model/OrderVM/OrderHistory/order_document_view_model.dart
 
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/repositories/order_service/order_document_service.dart';
 import '../../../models/OrderM/order_document_model.dart';
 
@@ -14,10 +15,15 @@ class FetchOrderDocument extends OrderDocumentEvent {
 abstract class OrderDocumentState {}
 class OrderDocumentInitial extends OrderDocumentState {}
 class OrderDocumentLoading extends OrderDocumentState {}
+
+// 🎯 NEW STATE: For data: null cases
+class OrderDocumentEmpty extends OrderDocumentState {}
+
 class OrderDocumentLoaded extends OrderDocumentState {
   final OrderDocumentModel document;
   OrderDocumentLoaded(this.document);
 }
+
 class OrderDocumentError extends OrderDocumentState {
   final String message;
   OrderDocumentError(this.message);
@@ -32,10 +38,17 @@ class OrderDocumentBloc extends Bloc<OrderDocumentEvent, OrderDocumentState> {
       emit(OrderDocumentLoading());
       try {
         final result = await service.getOrderDocument(event.orderId);
-        if (result.succeeded && result.data != null) {
-          emit(OrderDocumentLoaded(result.data!));
+
+        // 🎯 Logic for handling data: null
+        if (result.succeeded) {
+          if (result.data != null) {
+            emit(OrderDocumentLoaded(result.data!));
+          } else {
+            // Success but no data
+            emit(OrderDocumentEmpty());
+          }
         } else {
-          emit(OrderDocumentError("Document not found"));
+          emit(OrderDocumentError("Failed to fetch document"));
         }
       } catch (e) {
         emit(OrderDocumentError(e.toString()));

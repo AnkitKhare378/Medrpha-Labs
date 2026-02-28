@@ -87,6 +87,7 @@ class _TestDetailAddToCartButtonState extends State<TestDetailAddToCartButton> {
     final int userId = _currentUserId!;
 
     final int productId;
+    final int labId;
     final int categoryId;
     final String name;
     final double discountedPrice;
@@ -96,6 +97,7 @@ class _TestDetailAddToCartButtonState extends State<TestDetailAddToCartButton> {
       // ✅ Use GetMedicineByIdModel properties
       final medicine = widget.medicineDetail!;
       productId = medicine.id;
+      labId = 1;
       categoryId = 1; // 1 is a common placeholder for Medicine category ID
       name = medicine.product;
       discountedPrice = medicine.salePrice;
@@ -122,8 +124,8 @@ class _TestDetailAddToCartButtonState extends State<TestDetailAddToCartButton> {
     }
 
     // Format prices for cart model
-    final String originalPriceString = "₹${originalPrice.toStringAsFixed(0)}";
-    final String discountedPriceString = "₹${discountedPrice.toStringAsFixed(0)}";
+    final double originalPriceString = originalPrice;
+    final double discountedPriceString = discountedPrice;
     // --- END OF LOGIC TO SELECT MODEL DATA ---
 
     final cart = Provider.of<CartProvider>(context);
@@ -164,6 +166,7 @@ class _TestDetailAddToCartButtonState extends State<TestDetailAddToCartButton> {
         cart.remove(
           categoryId: categoryId,
           userId: userId,
+          labId: 1,
           productId: productId,
           name: name,
         );
@@ -178,6 +181,7 @@ class _TestDetailAddToCartButtonState extends State<TestDetailAddToCartButton> {
         cart.add(
           categoryId: categoryId,
           userId: userId,
+          labId: 1,
           productId: productId,
           name: name,
           originalPrice: originalPriceString,

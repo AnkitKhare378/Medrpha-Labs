@@ -12,7 +12,6 @@ import '../../../../view_model/WalletVM/updateWallet/update_wallet_state.dart';
 import '../../../../view_model/WalletVM/wallet_bloc.dart';
 import '../../../../view_model/WalletVM/wallet_event.dart';
 import '../../../../view_model/WalletVM/wallet_state.dart';
-import '../../HomeScreen/pages/widgets/add_more_test_button.dart';
 import '../widgets/transaction_tabs.dart';
 
 class WalletPage extends StatefulWidget {
@@ -25,26 +24,26 @@ class WalletPage extends StatefulWidget {
 class _WalletPageState extends State<WalletPage> {
   final TextEditingController amountController = TextEditingController();
 
-  // ⬅️ 2. Change _userId to be nullable and managed by state
   int? _userId;
-  bool _isLoadingUserId = true; // State to track if ID is loaded
+  bool _isLoadingUserId = true;
+
+  // Minimum limit constant
+  final double _minWalletLimit = 500.0;
 
   @override
   void initState() {
     super.initState();
-    _loadUserId(); // ⬅️ 3. Load the user ID when the state initializes
+    _loadUserId();
   }
 
   Future<void> _loadUserId() async {
     final prefs = await SharedPreferences.getInstance();
-    // final id = prefs.getInt('user_id'); // ⬅️ Original instruction
-    final id = prefs.getInt('user_id'); // ⬅️ Implementing the instruction
+    final id = prefs.getInt('user_id');
 
     if (mounted) {
       setState(() {
         _userId = id;
         _isLoadingUserId = false;
-        // 4. Trigger initial data fetch only after ID is loaded
         if (_userId != null) {
           context.read<WalletBloc>().add(const FetchWalletData());
         }
@@ -56,6 +55,30 @@ class _WalletPageState extends State<WalletPage> {
   void dispose() {
     amountController.dispose();
     super.dispose();
+  }
+
+  /// 1. Added Alert Dialog Method
+  void _showLimitAlert() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: Text("Minimum Amount Required",
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18)),
+          content: Text(
+            "Please enter an amount of ₹${_minWalletLimit.toInt()} or more to proceed.",
+            style: GoogleFonts.poppins(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("OK", style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.blueAccent)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   String _formatCurrency(double amount) {
@@ -75,7 +98,6 @@ class _WalletPageState extends State<WalletPage> {
       );
     }
 
-    // Handle case where user ID could not be loaded
     if (_userId == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('My wallet')),
@@ -85,22 +107,19 @@ class _WalletPageState extends State<WalletPage> {
       );
     }
 
-    // Now we can use _userId! safely in the rest of the build method
     final userId = _userId!;
 
     return BlocListener<UpdateWalletViewModel, UpdateWalletState>(
       listener: (context, state) {
         if (state is UpdateWalletSuccess) {
-          // **Reload the main Wallet data** to update the 'formattedBalance' in the view
           context.read<WalletBloc>().add(const FetchWalletData());
+          amountController.clear();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Wallet balance added successfully!')),
           );
         } else if (state is UpdateWalletError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content:
-                Text('Failed to add balance: ${state.message}')),
+            SnackBar(content: Text('Failed to add balance: ${state.message}')),
           );
         }
       },
@@ -118,7 +137,7 @@ class _WalletPageState extends State<WalletPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Wallet Total Section (Dynamic Content)
+              // Wallet Total Card
               BlocBuilder<WalletBloc, WalletState>(
                 builder: (context, state) {
                   if (state is WalletLoading) {
@@ -128,24 +147,46 @@ class _WalletPageState extends State<WalletPage> {
                   } else if (state is WalletLoaded) {
                     return _buildWalletCard(state.walletData);
                   }
-                  // Initial or other states show the default card
                   return _buildWalletCard(null);
                 },
               ),
 
               const SizedBox(height: 24),
 
-              // Add NMS Cash (Static Content)
-              Text('Add Medr Cash',
-                  style: GoogleFonts.poppins(
-                      fontSize: 16, fontWeight: FontWeight.w600)),
+              // Section Header with Red Min Label
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Add Medr Cash',
+                      style: GoogleFonts.poppins(
+                          fontSize: 16, fontWeight: FontWeight.w600)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text('Min: ₹${_minWalletLimit.toInt()}',
+                        style: GoogleFonts.poppins(
+                            fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
               const SizedBox(height: 12),
-              // ⬅️ 5. Use the loaded userId
-              AddCashSection(amountController: amountController, userId: userId),
+
+              // 2. Integration Point
+              // Ensure AddCashSection calls _showLimitAlert() if validation fails
+              AddCashSection(
+                amountController: amountController,
+                userId: userId,
+                // If your AddCashSection has a custom validation callback, use it here.
+                // Otherwise, the validation should happen inside the AddCashSection widget
+                // using the logic: if (amount < 500) _showLimitAlert();
+              ),
+
               const SizedBox(height: 16),
               Text(
-                'Note: The cash will be added to Medr Cash and can be used only for purchases on Medrpha Labs. '
-                    'The money added cannot be transferred to any other wallet and bank account. Terms & Conditions',
+                'Note: The cash will be added to Medr Cash and can be used only for purchases on Medrpha Labs.',
                 style: GoogleFonts.poppins(fontSize: 13, color: Colors.blueAccent, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 20),
@@ -158,8 +199,6 @@ class _WalletPageState extends State<WalletPage> {
   }
 
   // --- Widget Builders ---
-  // ... (rest of the _buildWalletCard and _walletRow functions remain the same)
-
   Widget _buildWalletCard(WalletData? data) {
     final balance = data?.currentBalance ?? 0.00;
     final formattedBalance = _formatCurrency(balance);
@@ -182,18 +221,14 @@ class _WalletPageState extends State<WalletPage> {
         children: [
           Text('Wallet Total',
               style: GoogleFonts.poppins(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[700])),
+                  fontSize: 15, fontWeight: FontWeight.w500, color: Colors.grey[700])),
           const SizedBox(height: 4),
           Text(formattedBalance,
               style: GoogleFonts.poppins(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.blueAccent)),
+                  fontSize: 28, fontWeight: FontWeight.w700, color: Colors.blueAccent)),
           const Divider(height: 28),
-          _walletRow('Medr Cash', formattedBalance), // Assuming currentBalance reflects Medr Cash
-          _walletRow('Medr Supercash', _formatCurrency(0.00)), // Hardcoded for supercash as it's not in API
+          _walletRow('Medr Cash', formattedBalance),
+          _walletRow('Medr Supercash', _formatCurrency(0.00)),
         ],
       ),
     );
@@ -205,14 +240,8 @@ class _WalletPageState extends State<WalletPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title,
-              style: GoogleFonts.poppins(
-                  fontSize: 15, fontWeight: FontWeight.w500)),
-          Text(amount,
-              style: GoogleFonts.poppins(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.blueAccent)),
+          Text(title, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500)),
+          Text(amount, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.blueAccent)),
         ],
       ),
     );

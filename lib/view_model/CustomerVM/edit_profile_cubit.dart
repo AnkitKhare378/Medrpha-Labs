@@ -1,10 +1,7 @@
-// lib/view_model/CustomerVM/edit_profile_cubit.dart (MODIFIED)
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/customer_service/edit_profile_service.dart';
 import '../../models/CustomerM/update_customer_response_model.dart';
 
-// --- States (Remains the same) ---
 abstract class EditProfileState {}
 
 class EditProfileInitial extends EditProfileState {}
@@ -30,7 +27,10 @@ class EditProfileCubit extends Cubit<EditProfileState> {
     required String customerName,
     required String emailId,
     required String phoneNumber,
-    String? photoPath, // ⬅️ ADDED: Optional file path
+    required String dob,
+    required String bloodGroup,
+    required String gender,
+    String? photoPath,
   }) async {
     emit(EditProfileLoading());
 
@@ -41,7 +41,10 @@ class EditProfileCubit extends Cubit<EditProfileState> {
         customerName: customerName,
         emailId: emailId,
         phoneNumber: phoneNumber,
-        photoPath: photoPath, // ⬅️ Passed to service
+        dob: dob,
+        bloodGroup: bloodGroup,
+        gender: gender,
+        photoPath: photoPath,
       );
 
       // 2. Process the response model

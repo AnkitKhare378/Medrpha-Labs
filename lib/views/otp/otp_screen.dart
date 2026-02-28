@@ -166,12 +166,18 @@ class _OtpScreenState extends State<OtpScreen> {
                                         ),
                                       ),
                                       const SizedBox(width: 5),
-                                      const Padding(
-                                        padding: EdgeInsets.only(top: 3),
-                                        child: Icon(
-                                          CupertinoIcons.pencil,
-                                          size: 18,
-                                          color: Colors.blueAccent,
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 3),
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            // This takes the user back to the Login screen to edit their info
+                                            Navigator.pop(context);
+                                          },
+                                          child: const Icon(
+                                            CupertinoIcons.pencil,
+                                            size: 18,
+                                            color: Colors.blueAccent,
+                                          ),
                                         ),
                                       ),
                                     ],

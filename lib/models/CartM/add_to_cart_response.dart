@@ -31,3 +31,20 @@ class AddToCartResponse {
     );
   }
 }
+
+
+class AddCartItem {
+  final int productId;
+  final int categoryId;
+  final int quantity;
+  final double price;
+  final double discount;
+
+  AddCartItem({
+    required this.productId,
+    required this.categoryId,
+    required this.quantity,
+    required this.price,
+    required this.discount,
+  });
+}

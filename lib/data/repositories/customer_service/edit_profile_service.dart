@@ -1,5 +1,3 @@
-// lib/data/repositories/customer_service/edit_profile_service.dart
-
 import '../../../config/apiConstant/api_constant.dart';
 import '../../../core/network/api_call.dart';
 import '../../../models/CustomerM/update_customer_response_model.dart';
@@ -12,6 +10,9 @@ class EditProfileService {
     required String customerName,
     required String emailId,
     required String phoneNumber,
+    required String dob,
+    required String bloodGroup,
+    required String gender,
     String? photoPath,
   }) async {
     final Map<String, String> fields = {
@@ -19,14 +20,17 @@ class EditProfileService {
       'CustomerName': customerName,
       'EmailId': emailId,
       'PhoneNumber': phoneNumber,
+      'DOB': dob,
+      'BloodGroup': bloodGroup,
+      'Gender': gender,
     };
 
     try {
       final responseData = await ApiCall.postMultipart(
         _updateCustomerEndpoint,
         fields,
-        filePath: photoPath, // ⬅️ Pass photo path if available
-        fileField: 'UploadPhoto', // ⬅️ The field name specified in the curl command
+        filePath: photoPath,
+        fileField: 'UploadPhoto',
       );
 
       // 2. Map the response data to the model

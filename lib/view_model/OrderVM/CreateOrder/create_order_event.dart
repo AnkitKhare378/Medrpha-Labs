@@ -14,6 +14,8 @@ class PlaceOrderEvent extends CreateOrderEvent {
   final double subTotal;
   final double discountAmount;
   final double finalAmount;
+  final String orderTime;
+  final String orderDate;
 
   const PlaceOrderEvent({
     required this.userId,
@@ -23,8 +25,10 @@ class PlaceOrderEvent extends CreateOrderEvent {
     required this.subTotal,
     required this.discountAmount,
     required this.finalAmount,
+    required this.orderTime,
+    required this.orderDate,
   });
 
   @override
-  List<Object> get props => [userId, cartId, paymentMethodId, subTotal, discountAmount, finalAmount];
+  List<Object> get props => [userId, cartId, paymentMethodId, subTotal, discountAmount, finalAmount, orderTime, orderDate];
 }

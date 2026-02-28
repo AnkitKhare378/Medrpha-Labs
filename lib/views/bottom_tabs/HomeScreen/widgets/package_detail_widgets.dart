@@ -11,7 +11,14 @@ import 'test_detail_add_to_cart_button.dart';
 // --- Search Bar Widget ---
 
 class PackageDetailSearchBar extends StatelessWidget {
-  const PackageDetailSearchBar({super.key});
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  const PackageDetailSearchBar({
+    super.key,
+    required this.controller,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,24 +26,47 @@ class PackageDetailSearchBar extends StatelessWidget {
       color: AppColors.primaryColor,
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
       child: Container(
-        height: 45,
+        height: 48, // Slightly increased for better tap targets
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: TextField(
+          controller: controller,
+          onChanged: onChanged,
+          textAlignVertical: TextAlignVertical.center,
           decoration: InputDecoration(
-            hintText: "Search for",
-            prefixIcon: const Icon(Icons.search, color: Colors.grey),
+            hintText: "Search tests or packages...",
+            prefixIcon: const Icon(Icons.search, color: AppColors.primaryColor, size: 20),
+            // Added a clear button that shows when typing
+            suffixIcon: controller.text.isNotEmpty
+                ? IconButton(
+              icon: const Icon(Icons.cancel, color: Colors.grey, size: 20),
+              onPressed: () {
+                controller.clear();
+                onChanged(''); // Trigger clear in Bloc
+              },
+            )
+                : null,
             border: InputBorder.none,
-            hintStyle: GoogleFonts.poppins(fontSize: 14),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            hintStyle: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+            ),
           ),
         ),
       ),
     );
   }
 }
-
 // --- Main Content Widget (Loaded State) ---
 
 class PackageDetailLoadedContent extends StatelessWidget {

@@ -64,38 +64,40 @@ class TestDetailModel extends Equatable {
   // Factory constructor to create a TestDetailModel from a JSON map
   factory TestDetailModel.fromJson(Map<String, dynamic> json) {
     return TestDetailModel(
-      testID: json['testID'] as int,
-      testCode: json['testCode'] as String,
-      testName: json['testName'] as String,
-      categoryID: json['categoryID'] as int,
-      categoryName: json['categoryName'] as String,
-      departmentID: json['departmentID'] as int,
-      departmentName: json['departmentName'] as String,
-      sampleTypeID: json['sampleTypeID'] as int,
-      sampleName: json['sampleName'] as String,
-      methodID: json['methodID'] as int,
-      methodName: json['methodName'] as String,
-      testSynonymId: json['testSynonymId'] as int,
-      synonymName: json['synonymName'] as String?,
-      unitID: json['unitID'] as int,
-      unitName: json['unitName'] as String,
-      reportFormatID: json['reportFormatID'] as int,
-      reportFormatName: json['reportFormatName'] as String?,
-      normalRange: json['normalRange'] as String,
-      // Handle potential number types for price (int or double)
-      testPrice: (json['testPrice'] as num).toDouble(),
-      description: json['description'] as String,
-      isPopular: json['isPopular'] as bool,
-      displayOrder: json['displayOrder'] as int,
-      isActive: json['isActive'] as bool,
-      isFasting: json['isFasting'] as bool,
-      companyId: json['companyId'] as int,
-      labId: json['labId'] as int,
-      testImage: json['testImage'] as String,
-      symptomId: json['symptomId'] as int,
+      // Use ?? to provide a default value if the key is null
+      testID: json['testID'] as int? ?? 0,
+      testCode: json['testCode'] as String? ?? '',
+      testName: json['testName'] as String? ?? 'Unknown Test',
+      categoryID: json['categoryID'] as int? ?? 0,
+      categoryName: json['categoryName'] as String? ?? '',
+      departmentID: json['departmentID'] as int? ?? 0,
+      departmentName: json['departmentName'] as String? ?? '',
+      sampleTypeID: json['sampleTypeID'] as int? ?? 0,
+      sampleName: json['sampleName'] as String? ?? '',
+      methodID: json['methodID'] as int? ?? 0,
+      methodName: json['methodName'] as String? ?? '',
+      testSynonymId: json['testSynonymId'] as int? ?? 0,
+      synonymName: json['synonymName'] as String?, // Already nullable
+      unitID: json['unitID'] as int? ?? 0,
+      unitName: json['unitName'] as String? ?? '',
+      reportFormatID: json['reportFormatID'] as int? ?? 0,
+      reportFormatName: json['reportFormatName'] as String?, // Already nullable
+      normalRange: json['normalRange'] as String? ?? 'N/A',
+
+      // Safety for numbers: cast as num first, then toDouble
+      testPrice: (json['testPrice'] as num? ?? 0.0).toDouble(),
+
+      description: json['description'] as String? ?? '',
+      isPopular: json['isPopular'] as bool? ?? false,
+      displayOrder: json['displayOrder'] as int? ?? 0,
+      isActive: json['isActive'] as bool? ?? true,
+      isFasting: json['isFasting'] as bool? ?? false,
+      companyId: json['companyId'] as int? ?? 0,
+      labId: json['labId'] as int? ?? 0,
+      testImage: json['testImage'] as String? ?? '',
+      symptomId: json['symptomId'] as int? ?? 0,
     );
   }
-
   @override
   List<Object?> get props => [
     testID,

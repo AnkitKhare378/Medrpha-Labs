@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../data/repositories/medicine_service/medicine_by_Id_service.dart';
 import '../../../../view_model/MedicineVM/medicine_detail_view_model.dart';
+import '../../CartScreen/store/cart_notifier.dart';
+import '../../CartScreen/widgets/go_to_cart_bar.dart';
 import 'medicine_detail_content_manager.dart';
 
 class MedicineDetailScreen extends StatelessWidget {
@@ -17,7 +19,7 @@ class MedicineDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Provide the MedicineDetailCubit and load the data immediately
+    final cartCount = context.watch<CartProvider>().totalCount;
     return BlocProvider(
       create: (context) => MedicineDetailCubit(MedicineService())
         ..fetchMedicineDetail(medicineId), // Start fetching data
@@ -34,6 +36,9 @@ class MedicineDetailScreen extends StatelessWidget {
         ),
         // The manager will handle the loading/shimmer/error/loaded states
         body: const MedicineDetailContentManager(),
+        bottomNavigationBar: cartCount > 0
+            ? GoToCartBar(cartCount: cartCount)
+            : null,
       ),
     );
   }

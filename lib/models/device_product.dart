@@ -1,8 +1,8 @@
 class DeviceProduct {
   final String name;
   final String imageUrl;
-  final String originalPrice;
-  final String discountedPrice;
+  final double originalPrice;
+  final double discountedPrice;
   final String discountPercentage;
   bool isSaved;
   final String category;

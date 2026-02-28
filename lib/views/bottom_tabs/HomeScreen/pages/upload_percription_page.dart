@@ -15,6 +15,7 @@ class UploadPrescriptionPage extends StatefulWidget {
 
 class _UploadPrescriptionPageState extends State<UploadPrescriptionPage> {
   File? _selectedFile;
+  bool _isUploading = false; // Track upload state
   final ImagePicker _picker = ImagePicker();
 
   // Logic for Camera and Gallery
@@ -22,7 +23,7 @@ class _UploadPrescriptionPageState extends State<UploadPrescriptionPage> {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
-        imageQuality: 80, // Reduces size to stay under 5MB
+        imageQuality: 80,
       );
       if (pickedFile != null) {
         setState(() {
@@ -45,8 +46,6 @@ class _UploadPrescriptionPageState extends State<UploadPrescriptionPage> {
 
       if (result != null) {
         PlatformFile file = result.files.first;
-
-        // Check file size (5MB limit)
         if (file.size > 5 * 1024 * 1024) {
           _showErrorSnackBar("File size exceeds 5MB limit");
           return;
@@ -59,6 +58,27 @@ class _UploadPrescriptionPageState extends State<UploadPrescriptionPage> {
       }
     } catch (e) {
       _showErrorSnackBar("Error picking file: $e");
+    }
+  }
+
+  // Simulate Upload Function
+  Future<void> _uploadData() async {
+    if (_selectedFile == null) return;
+
+    setState(() => _isUploading = true);
+
+    try {
+      // TODO: Add your API multipart upload logic here
+      await Future.delayed(const Duration(seconds: 2)); // Simulating network delay
+
+      _showSuccessSnackBar("Prescription uploaded successfully!");
+      setState(() {
+        _selectedFile = null; // Clear after success
+      });
+    } catch (e) {
+      _showErrorSnackBar("Upload failed: $e");
+    } finally {
+      setState(() => _isUploading = false);
     }
   }
 
@@ -105,6 +125,26 @@ class _UploadPrescriptionPageState extends State<UploadPrescriptionPage> {
 
             const SizedBox(height: 25),
 
+            // Upload Button Section (Visible only when file selected)
+            if (_selectedFile != null) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isUploading ? null : _uploadData,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: _isUploading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text('UPLOAD PRESCRIPTION',
+                      style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
             Text('• Include details of doctor, patient & date of visit', style: GoogleFonts.poppins(fontSize: 14)),
             Text('• Supported files: PNG, JPEG, PDF', style: GoogleFonts.poppins(fontSize: 14)),
             Text('• File size limit: 5MB', style: GoogleFonts.poppins(fontSize: 14)),
@@ -132,10 +172,9 @@ class _UploadPrescriptionPageState extends State<UploadPrescriptionPage> {
     );
   }
 
-  // Helper to build the buttons
   Widget _buildOption(IconData icon, String label, VoidCallback onTap) {
     return InkWell(
-      onTap: onTap,
+      onTap: _isUploading ? null : onTap, // Disable options while uploading
       child: Column(
         children: [
           CircleAvatar(
@@ -173,18 +212,24 @@ class _UploadPrescriptionPageState extends State<UploadPrescriptionPage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.primaryColor),
+        border: Border.all(color: AppColors.primaryColor.withOpacity(0.5)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         children: [
           isPdf
               ? const Icon(Icons.picture_as_pdf, size: 100, color: Colors.red)
-              : Image.file(_selectedFile!, height: 200, fit: BoxFit.contain),
-          TextButton(
-            onPressed: () => setState(() => _selectedFile = null),
-            child: const Text("Remove File", style: TextStyle(color: Colors.red)),
+              : ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(_selectedFile!, height: 200, fit: BoxFit.contain),
+          ),
+          const SizedBox(height: 10),
+          TextButton.icon(
+            onPressed: _isUploading ? null : () => setState(() => _selectedFile = null),
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            label: const Text("Remove and try another", style: TextStyle(color: Colors.red)),
           )
         ],
       ),
